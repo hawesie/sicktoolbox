@@ -1,4 +1,4 @@
-P/*!
+/*!
  * \file SickPLS.cc
  * \brief Definition of the class SickPLS
  *
