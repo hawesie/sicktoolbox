@@ -1,0 +1,15 @@
+*.in
+*~
+config.*
+*.lo
+Makefile
+*.la
+*.libs
+*.deps
+misc
+libtool
+configure
+aclocal.m4
+autom4te.cache
+c++/drivers/base/src/SickConfig.hh
+c++/drivers/base/src/stamp-h1
