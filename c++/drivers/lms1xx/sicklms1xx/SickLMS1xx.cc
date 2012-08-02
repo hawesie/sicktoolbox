@@ -20,6 +20,7 @@
 #include <string>
 #include <cmath>
 #include <cstdlib>
+#include <cstdio>
 #include <iostream>
 #include <iomanip>
 #include <sys/socket.h>       // for socket function definitions
