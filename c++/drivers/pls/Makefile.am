@@ -1,1 +1,1 @@
-SUBDIRS=sickpls
+SUBDIRS=$(SICK_PLS_SRC_DIR)
