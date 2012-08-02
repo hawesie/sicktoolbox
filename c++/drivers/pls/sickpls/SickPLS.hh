@@ -53,6 +53,7 @@ namespace SickToolbox {
   public:
     
     /** Define the maximum number of measurements */
+	/* TODO: I think this should be 180 * 2 */
     static const uint16_t SICK_MAX_NUM_MEASUREMENTS = 721;                     ///< Maximum number of measurements returned by the Sick PLS
 
     /*!
@@ -61,59 +62,27 @@ namespace SickToolbox {
      * This enum lists all of the supported Sick PLS models.
      */
     enum sick_pls_type_t {
-      
-      /* Supported 200 models */
-      SICK_PLS_TYPE_200_30106,                                                 ///< Sick PLS type 200-30106
-      
-      /* Supported 211 models */
-      SICK_PLS_TYPE_211_30106,                                                 ///< Sick PLS type 211-30106
-      SICK_PLS_TYPE_211_30206,                                                 ///< Sick PLS type 211-30206
-      SICK_PLS_TYPE_211_S07,                                                   ///< Sick PLS type 211-S07
-      SICK_PLS_TYPE_211_S14,                                                   ///< Sick PLS type 211-S14
-      SICK_PLS_TYPE_211_S15,                                                   ///< Sick PLS type 211-S15
-      SICK_PLS_TYPE_211_S19,                                                   ///< Sick PLS type 211-S19
-      SICK_PLS_TYPE_211_S20,                                                   ///< Sick PLS type 211-S20
 
-      /* Supported 220 models */
-      SICK_PLS_TYPE_220_30106,                                                 ///< Sick PLS type 220-30106
 
-      /* Supported 221 models */
-      SICK_PLS_TYPE_221_30106,                                                 ///< Sick PLS type 221-30106
-      SICK_PLS_TYPE_221_30206,                                                 ///< Sick PLS type 221-30206
-      SICK_PLS_TYPE_221_S07,                                                   ///< Sick PLS type 221-S07
-      SICK_PLS_TYPE_221_S14,                                                   ///< Sick PLS type 221-S14
-      SICK_PLS_TYPE_221_S15,                                                   ///< Sick PLS type 221-S15
-      SICK_PLS_TYPE_221_S16,                                                   ///< Sick PLS type 221-S16
-      SICK_PLS_TYPE_221_S19,                                                   ///< Sick PLS type 221-S19
-      SICK_PLS_TYPE_221_S20,                                                   ///< Sick PLS type 221-S20
-
-      /* Supported 291 models */
-      SICK_PLS_TYPE_291_S05,                                                   ///< Sick PLS type 291-S05
-      SICK_PLS_TYPE_291_S14,                                                   ///< Sick PLS type 291-S14 (PLS Fast)
-      SICK_PLS_TYPE_291_S15,                                                   ///< Sick PLS type 291-S15
+      /* TODO: List taken from website, need to prune. */
+      SICK_PLS_TYPE_101_312,
+      SICK_PLS_TYPE_101_316,
+      SICK_PLS_TYPE_109_317,
+      SICK_PLS_TYPE_10X_317,
+      SICK_PLS_TYPE_201_313,
 
       /* Any unknown model */
       SICK_PLS_TYPE_UNKNOWN = 0xFF                                             ///< Unknown sick type      
 
     };
-    
-    /*!
-     * \enum sick_pls_variant_t
-     * \brief Defines the Sick PLS variant type.
-     */
-    enum sick_pls_variant_t {
-      SICK_PLS_VARIANT_2XX_TYPE_6 = 0x00,                                      ///< Standard PLS type 6 models
-      SICK_PLS_VARIANT_SPECIAL = 0x01,                                         ///< Special models (i.e. PLS211-/221-S19/-S20
-      SICK_PLS_VARIANT_UNKNOWN = 0xFF                                          ///< Unknown PLS variant
-    };
+
 
     /*!
      * \enum sick_pls_scan_angle_t
      * \brief Defines the scan angle for the Sick PLS.
      */
     enum sick_pls_scan_angle_t {
-      SICK_SCAN_ANGLE_90 = 90,                                                 ///< Scanning angle of 90 degrees
-      SICK_SCAN_ANGLE_100 = 100,                                               ///< Scanning angle of 100 degrees
+	  /** PLS only does 180 **/
       SICK_SCAN_ANGLE_180 = 180,                                               ///< Scanning angle of 180 degrees
       SICK_SCAN_ANGLE_UNKNOWN = 0xFF                                           ///< Unknown scanning angle
     };
@@ -123,9 +92,8 @@ namespace SickToolbox {
      * \brief Defines the available resolution settings for the Sick PLS.
      */
     enum sick_pls_scan_resolution_t {
-      SICK_SCAN_RESOLUTION_25 = 25,                                            ///< 0.25 degree angular resolution
+	  /** PLS only does 0.5 deg angular resolution **/
       SICK_SCAN_RESOLUTION_50 = 50,                                            ///< 0.50 degree angular resolution
-      SICK_SCAN_RESOLUTION_100 = 100,                                          ///< 1.00 degree angular resolution
       SICK_SCAN_RESOLUTION_UNKNOWN = 0xFF                                      ///< Unknown angular resolution
     };
 
@@ -134,33 +102,11 @@ namespace SickToolbox {
      * \brief Defines the available Sick PLS measured value units.
      */
     enum sick_pls_measuring_units_t {
-      SICK_MEASURING_UNITS_CM = 0x00,                                          ///< Measured values are in centimeters
+
+      /* TODO: check what this does */
+	  SICK_MEASURING_UNITS_CM = 0x00,                                          ///< Measured values are in centimeters
       SICK_MEASURING_UNITS_MM = 0x01,                                          ///< Measured values are in milimeters
       SICK_MEASURING_UNITS_UNKNOWN = 0xFF                                      ///< Unknown units
-    };
-
-    /*!
-     * \enum sick_pls_sensitivity_t
-     * \brief Sick sensitivities. Only valid for Sick PLS 211/221/291!
-     */
-    enum sick_pls_sensitivity_t {
-      SICK_SENSITIVITY_STANDARD = 0x00,                                        ///< Standard sensitivity: 30m @ 10% reflectivity
-      SICK_SENSITIVITY_MEDIUM = 0x01,                                          ///< Medium sensitivity:   25m @ 10% reflectivity
-      SICK_SENSITIVITY_LOW = 0x02,                                             ///< Low sensitivity:      20m @ 10% reflectivity
-      SICK_SENSITIVITY_HIGH = 0x03,                                            ///< High sensitivity:     42m @ 10% reflectivity
-      SICK_SENSITIVITY_UNKNOWN = 0xFF                                          ///< Sensitivity unknown
-    };
-
-    /*!
-     * \enum sick_pls_peak_threshold_t
-     * \brief Sick peak threshold. Only valid for Sick PLS 200/220!
-     */
-    enum sick_pls_peak_threshold_t {
-      SICK_PEAK_THRESHOLD_DETECTION_WITH_NO_BLACK_EXTENSION = 0x00,            ///< Standard: peak threshold detection, no black extension
-      SICK_PEAK_THRESHOLD_DETECTION_WITH_BLACK_EXTENSION = 0x01,               ///< Peak threshold detection, active black extension
-      SICK_PEAK_THRESHOLD_NO_DETECTION_WITH_NO_BLACK_EXTENSION = 0x02,         ///< No peak threshold detection, no black extension
-      SICK_PEAK_THRESHOLD_NO_DETECTION_WITH_BLACK_EXTENSION = 0x03,            ///< No peak threshold detection, active black extension
-      SICK_PEAK_THRESHOLD_UNKNOWN = 0xFF                                       ///< Peak threshold unknown
     };
 
     /*!
@@ -172,30 +118,16 @@ namespace SickToolbox {
       SICK_STATUS_ERROR = 0x01,                                                ///< PLS has encountered an error
       SICK_STATUS_UNKNOWN = 0xFF                                               ///< Unknown PLS status
     };
-    
-    /*!
-     * \enum sick_pls_measuring_mode_t
-     * \brief Defines the measurment modes supported by Sick PLS.
-     */
-    enum sick_pls_measuring_mode_t { 
-      SICK_MS_MODE_8_OR_80_FA_FB_DAZZLE = 0x00,                                ///< Measurement range 8m/80m; fields A,B and Dazzle (Default)
-      SICK_MS_MODE_8_OR_80_REFLECTOR = 0x01,                                   ///< Measurement range 8/80m; reflector bits in 8 levels
-      SICK_MS_MODE_8_OR_80_FA_FB_FC = 0x02,                                    ///< Measurement range 8/80m; fields A,B, and C
-      SICK_MS_MODE_16_REFLECTOR = 0x03,                                        ///< Measurement range 16m; reflector bits in 4 levels
-      SICK_MS_MODE_16_FA_FB = 0x04,                                            ///< Measurement range 16m; fields A and B
-      SICK_MS_MODE_32_REFLECTOR = 0x05,                                        ///< Measurement range 32m; reflector bit in 2 levels
-      SICK_MS_MODE_32_FA = 0x06,                                               ///< Measurement range 32m; field A
-      SICK_MS_MODE_32_IMMEDIATE = 0x0F,                                        ///< Measurement range 32m; immediate data transmission, no flags      
-      SICK_MS_MODE_REFLECTIVITY = 0x3F,                                        ///< Sick PLS returns reflectivity (echo amplitude) values instead of range measurements
-      SICK_MS_MODE_UNKNOWN = 0xFF                                              ///< Unknown range
-    };
-    
+        
     /*!
      * \enum sick_pls_operating_mode_t
      * \brief Defines the operating modes supported by Sick PLS. 
      * See page 41 of the PLS telegram manual for additional descriptions of these modes.
      */
     enum sick_pls_operating_mode_t {
+	
+	  /** TODO: Check what options PLS has **/
+	
       SICK_OP_MODE_INSTALLATION = 0x00,                                        ///< Installation mode for writing EEPROM
       SICK_OP_MODE_DIAGNOSTIC = 0x10,                                          ///< Diagnostic mode for testing purposes
       SICK_OP_MODE_MONITOR_STREAM_MIN_VALUE_FOR_EACH_SEGMENT = 0x20,           ///< Streams minimum measured values for each segement
@@ -228,11 +160,6 @@ namespace SickToolbox {
       SICK_BAUD_UNKNOWN = 0xFF                                                 ///< Unknown baud rate
     };
 
-    /** Define Sick PLS availability levels */
-    static const uint8_t SICK_FLAG_AVAILABILITY_DEFAULT = 0x00;                ///< Availability unspecified
-    static const uint8_t SICK_FLAG_AVAILABILITY_HIGH = 0x01;                   ///< Highest availability (comparable to PLS types 1 to 5)
-    static const uint8_t SICK_FLAG_AVAILABILITY_REAL_TIME_INDICES = 0x02;      ///< Send real-time indices
-    static const uint8_t SICK_FLAG_AVAILABILITY_DAZZLE_NO_EFFECT = 0x04;       ///< Dazzle evalutation has no effect on switching outputs
   
     /*!
      * \struct sick_pls_operating_status_tag
@@ -254,7 +181,6 @@ namespace SickToolbox {
       uint8_t sick_device_status;                                              ///< Sick device status {ok,error}
       uint8_t sick_measuring_units;                                            ///< Sick measuring units {cm,mm}
       uint8_t sick_address;                                                    ///< Sick device address
-      uint8_t sick_variant;                                                    ///< Sick variant {special,standard}
     } sick_pls_operating_status_t;
     
     /*!
@@ -271,78 +197,7 @@ namespace SickToolbox {
       uint8_t sick_system_software_version[8];                                 ///< Sick system software version
       uint8_t sick_prom_software_version[8];                                   ///< Sick boot prom software version
     } sick_pls_software_status_t;
-    
-    /*!
-     * \struct sick_pls_restart_status_tag
-     * \brief A structure for aggregating the data that
-     *        collectively defines the system restart
-     *        config for the Sick PLS unit
-     */
-    typedef struct sick_pls_restart_status_tag {
-      uint16_t sick_restart_time;                                              ///< Sick restart time  
-      uint8_t sick_restart_mode;                                               ///< Sick restart mode
-    } sick_pls_restart_status_t;
-    
-    /*!
-     * \struct sick_pls_pollution_status_tag
-     * \brief A structure for aggregating the data that
-     *        collectively defines the pollution values
-     *        and settings for the device
-     */
-    /*!
-     * \typedef sick_pls_pollution_status_t
-     * \brief Adopt c-style convention
-     */
-    typedef struct sick_pls_pollution_status_tag {
-      uint16_t sick_pollution_vals[8];                                         ///< Calibrating the pollution channels
-      uint16_t sick_pollution_calibration_vals[8];                             ///< Calibrating the pollution channel values
-      uint16_t sick_reference_pollution_vals[4];                               ///< Reference pollution values
-      uint16_t sick_reference_pollution_calibration_vals[4];                   ///< Reference pollution calibration values
-    } sick_pls_pollution_status_t;
-    
-    /*!
-     * \struct sick_pls_signal_status_tag
-     * \brief A structure for aggregating the data that
-     *        collectively define the signal config and
-     *        status.
-     */
-    /*!
-     * \typedef sick_pls_signal_status_t
-     * \brief Adopt c-style convention
-     */
-    typedef struct sick_pls_signal_status_tag {
-      uint16_t sick_reference_scale_1_dark_100;                                ///< Receive signal amplitude in ADC incs when reference signal is switched off (Signal 1, Dark 100%)
-      uint16_t sick_reference_scale_2_dark_100;                                ///< Receive signal amplitude in ADC incs when reference signal is switched off (Signal 2, Dark 100%)
-      uint16_t sick_reference_scale_1_dark_66;                                 ///< Receive signal amplitude in ADC incs when reference signal is switched off (Signal 1, Dark 66%)
-      uint16_t sick_reference_scale_2_dark_66;                                 ///< Receive signal amplitude in ADC incs when reference signal is switched off (Signal 2, Dark 66%)
-      uint16_t sick_signal_amplitude;                                          ///< Laser power in % of calibration value
-      uint16_t sick_current_angle;                                             ///< Angle used for power measurement 
-      uint16_t sick_peak_threshold;                                            ///< Peak threshold in ADC incs for power measurement
-      uint16_t sick_angle_of_measurement;                                      ///< Angles used to reference target for power measurement
-      uint16_t sick_signal_amplitude_calibration_val;                          ///< Calibration of the laser power
-      uint16_t sick_stop_threshold_target_value;                               ///< Target value of the stop threshold in ADC incs
-      uint16_t sick_peak_threshold_target_value;                               ///< Target value of the peak threshold in ADC incs
-      uint16_t sick_stop_threshold_actual_value;                               ///< Actual value of the stop threshold in ADC incs
-      uint16_t sick_peak_threshold_actual_value;                               ///< Actual value of the peak threshold in ADC incs
-      uint16_t sick_reference_target_single_measured_vals;                     ///< Reference target "single measured values." Low byte: Current number of filtered single measured values. High byte: Max num filtered single measured value since power-on. 
-      uint16_t sick_reference_target_mean_measured_vals;                       ///< Reference target "mean measured values." Low byte: Current number of filtered mean measured values. High byte: Max num filtered mean measured value since power-on. 
-    } sick_pls_signal_status_t;
-    
-    /*!
-     * \struct sick_pls_field_status_tag
-     * \brief A structure for aggregating the data that
-     *        collectively define the signal config and
-     *        status.
-     */
-    /*!
-     * \typedef sick_pls_field_status_t
-     * \brief Adopt c-style convention
-     */
-    typedef struct sick_pls_field_status_tag {
-      uint8_t sick_field_evaluation_number;                                    ///< Number of evaluations when the field is infirnged (lies in [1,125])
-      uint8_t sick_field_set_number;                                           ///< Active field set number
-      uint8_t sick_multiple_evaluation_offset_field_2;                         ///< Offset for multiple evaluation of field set 2 (see page 105 of telegram listing)
-    } sick_pls_field_status_t;
+       
     
     /*!
      * \struct sick_pls_baud_status_tag
@@ -369,36 +224,10 @@ namespace SickToolbox {
      */
     typedef struct sick_pls_device_config_tag {
       uint16_t sick_blanking;                                                  ///< Maximum diameter of objects that are not to be detected (units cm)                
-      uint16_t sick_fields_b_c_restart_times;                                  ///< Restart times for fields B and C
-      uint16_t sick_dazzling_multiple_evaluation;                              ///< Number of scans that take place before PLS switches the outputs (only applies to availability level 1)
-      uint8_t sick_peak_threshold;                                             ///< Peak threshold/black correction (This applies to Sick PLS 200/220 models, when Sick PLS 211/221/291 models are used, this value is sensitivity)
-      uint8_t sick_stop_threshold;                                             ///< Stop threshold in mV (This only applies to Sick PLS 200/220 models)
-      uint8_t sick_availability_level;                                         ///< Availability level of the Sick PLS     
-      uint8_t sick_measuring_mode;                                             ///< Measuring mode of the device 
       uint8_t sick_measuring_units;                                            ///< Measured value and field value units
       uint8_t sick_temporary_field;                                            ///< Indicates whether the temporary field is being used
-      uint8_t sick_subtractive_fields;                                         ///< Indicates whether fields A and B are subtractive
-      uint8_t sick_multiple_evaluation;                                        ///< Multiple evalutation of scan data
       uint8_t sick_restart;                                                    ///< Indicates the restart level of the device
       uint8_t sick_restart_time;                                               ///< Inidicates the restart time of the device
-      uint8_t sick_multiple_evaluation_suppressed_objects;                     ///< Multiple evaluation for objects less than the blanking size
-      uint8_t sick_contour_a_reference;                                        ///< Contour function A
-      uint8_t sick_contour_a_positive_tolerance_band;                          ///< When contour function is active the positive tolerance is defined in (cm)
-      uint8_t sick_contour_a_negative_tolerance_band;                          ///< When contour function is active the negative tolerance is defined in (cm)
-      uint8_t sick_contour_a_start_angle;                                      ///< When contour function is active the start angle of area to be monitored is defined (deg)
-      uint8_t sick_contour_a_stop_angle;                                       ///< When contour function is active the stop angle of area to be monitored is defined (deg)
-      uint8_t sick_contour_b_reference;                                        ///< Contour function B
-      uint8_t sick_contour_b_positive_tolerance_band;                          ///< When contour function is active the positive tolerance is defined in (cm)
-      uint8_t sick_contour_b_negative_tolerance_band;                          ///< When contour function is active the negative tolerance is defined in (cm)    uint8_t sick_contour_b_start_angle;                                       ///< When contour function is active the start angle of area to be monitored is defined (deg)
-      uint8_t sick_contour_b_start_angle;                                      ///< When contour function is active the start angle of area to be monitored is defined (deg)
-      uint8_t sick_contour_b_stop_angle;                                       ///< When contour function is active the stop angle of area to be monitored is defined (deg)
-      uint8_t sick_contour_c_reference;                                        ///< Contour function C
-      uint8_t sick_contour_c_positive_tolerance_band;                          ///< When contour function is active the positive tolerance is defined in (cm)
-      uint8_t sick_contour_c_negative_tolerance_band;                          ///< When contour function is active the negative tolerance is defined in (cm)
-      uint8_t sick_contour_c_start_angle;                                      ///< When contour function is active the start angle of area to be monitored is defined (deg)
-      uint8_t sick_contour_c_stop_angle;                                       ///< When contour function is active the stop angle of area to be monitored is defined (deg)
-      uint8_t sick_pixel_oriented_evaluation;                                  ///< Pixel oriented evaluation
-      uint8_t sick_single_measured_value_evaluation_mode;                      ///< Multiple evaluation (min: 1, max: 125)
     } sick_pls_device_config_t;
     
     /*!
@@ -414,99 +243,12 @@ namespace SickToolbox {
     typedef struct sick_pls_scan_profile_b0_tag {
       uint16_t sick_num_measurements;                                          ///< Number of measurements
       uint16_t sick_measurements[SICK_MAX_NUM_MEASUREMENTS];                   ///< Range/reflectivity measurement buffer
-      uint8_t sick_field_a_values[SICK_MAX_NUM_MEASUREMENTS];                  ///< Reflects the Field A bit value returned w/ range measurement
-      uint8_t sick_field_b_values[SICK_MAX_NUM_MEASUREMENTS];                  ///< Reflects the Field B but value returned w/ range measurement
-      uint8_t sick_field_c_values[SICK_MAX_NUM_MEASUREMENTS];                  ///< Reflects the Field C (or dazzle - depending upon sensor mode) value returned w/ range measurement
       uint8_t sick_telegram_index;                                             ///< Telegram index modulo 256
       uint8_t sick_real_time_scan_index;                                       ///< If real-time scan indices are requested, this value is set (modulo 256)
       uint8_t sick_partial_scan_index;                                         ///< Indicates the start angle of the scan (This is useful for partial scans)
     } sick_pls_scan_profile_b0_t;
-    
-    /*!
-     * \struct sick_pls_scan_profile_b6_tag
-     * \brief A structure for aggregating the data that
-     *        define a scan profile obtained from reply
-     *        B6 (See page 61 Telegram listing)
-     */
-    /*!
-     * \typedef sick_pls_scan_profile_b6_t
-     * \brief Adopt c-style convention
-     */
-    typedef struct sick_pls_scan_profile_b6_tag {
-      uint16_t sick_num_measurements;                                          ///< Number of measurements
-      uint16_t sick_measurements[SICK_MAX_NUM_MEASUREMENTS];                   ///< Range/reflectivity measurement buffer
-      uint8_t sick_sample_size;                                                ///< Number of scans used in computing the returned mean
-      uint8_t sick_telegram_index;                                             ///< Telegram index modulo 256
-      uint8_t sick_real_time_scan_index;                                       ///< If real-time scan indices are requested, this value is set (modulo 256)
-    } sick_pls_scan_profile_b6_t;
-    
-    /*!
-     * \struct sick_pls_scan_profile_b7_tag
-     * \brief A structure for aggregating the data that
-     *        define a scan profile obtained from reply
-     *        B7 (See page 63 Telegram listing)
-     */
-    /*!
-     * \typedef sick_pls_scan_profile_b7_t
-     * \brief Adopt c-style convention
-     */  
-    typedef struct sick_pls_scan_profile_b7_tag {
-      uint16_t sick_subrange_start_index;                                      ///< Measurement subrange start index
-      uint16_t sick_subrange_stop_index;                                       ///< Measurement subrange stop index
-      uint16_t sick_num_measurements;                                          ///< Number of measurements
-      uint16_t sick_measurements[SICK_MAX_NUM_MEASUREMENTS];                   ///< Range/reflectivity measurement buffer
-      uint8_t sick_field_a_values[SICK_MAX_NUM_MEASUREMENTS];                  ///< Reflects the Field A bit value returned w/ range measurement
-      uint8_t sick_field_b_values[SICK_MAX_NUM_MEASUREMENTS];                  ///< Reflects the Field B but value returned w/ range measurement
-      uint8_t sick_field_c_values[SICK_MAX_NUM_MEASUREMENTS];                  ///< Reflects the Field C (or dazzle - depending upon sensor mode) value returned w/ range measurement
-      uint8_t sick_telegram_index;                                             ///< Telegram index modulo 256
-      uint8_t sick_real_time_scan_index;                                       ///< If real-time scan indices are requested, this value is set (modulo 256)
-      uint8_t sick_partial_scan_index;                                         ///< Indicates the start angle of the scan (This is useful for partial scans)
-    } sick_pls_scan_profile_b7_t;
-    
-    /*!
-     * \struct sick_pls_scan_profile_bf_tag
-     * \brief A structure for aggregating the data that
-     *        define a scan profile obtained from reply
-     *        BF (See page 71 Telegram listing)
-     */
-    /*!
-     * \typedef sick_pls_scan_profile_bf_t
-     * \brief Adopt c-style convention
-     */
-    typedef struct sick_pls_scan_profile_bf_tag {
-      uint16_t sick_subrange_start_index;                                      ///< Measurement subrange start index
-      uint16_t sick_subrange_stop_index;                                       ///< Measurement subrange stop index
-      uint16_t sick_num_measurements;                                          ///< Number of measurements
-      uint16_t sick_measurements[SICK_MAX_NUM_MEASUREMENTS];                   ///< Range/reflectivity measurement buffer
-      uint8_t sick_sample_size;                                                ///< Number of scans used in computing the returned mean
-      uint8_t sick_telegram_index;                                             ///< Telegram index modulo 256
-      uint8_t sick_real_time_scan_index;                                       ///< If real-time scan indices are requested, this value is set (modulo 256)
-    } sick_pls_scan_profile_bf_t;
-    
-    /*!
-     * \struct sick_pls_scan_profile_c4_tag
-     * \brief A structure for aggregating the data that
-     *        define a scan profile obtained from reply
-     *        B4 (See page 79 Telegram listing)
-     */
-    /*!
-     * \typedef sick_pls_scan_profile_c4_t
-     * \brief Adopt c-style convention
-     */
-    typedef struct sick_pls_scan_profile_c4_tag {
-      uint16_t sick_num_range_measurements;                                    ///< Number of range measurements
-      uint16_t sick_num_reflect_measurements;                                  ///< Number of reflectivity measurements
-      uint16_t sick_range_measurements[SICK_MAX_NUM_MEASUREMENTS];             ///< Range measurement buffer
-      uint16_t sick_reflect_measurements[SICK_MAX_NUM_MEASUREMENTS];           ///< Reflect measurements buffer
-      uint16_t sick_reflect_subrange_start_index;                              ///< Start index of the measured reflectivity value subrange
-      uint16_t sick_reflect_subrange_stop_index;                               ///< Stop index of the measured reflectivity value subrange
-      uint8_t sick_field_a_values[SICK_MAX_NUM_MEASUREMENTS];                  ///< Reflects the Field A bit value returned w/ range measurement
-      uint8_t sick_field_b_values[SICK_MAX_NUM_MEASUREMENTS];                  ///< Reflects the Field B but value returned w/ range measurement
-      uint8_t sick_field_c_values[SICK_MAX_NUM_MEASUREMENTS];                  ///< Reflects the Field C (or dazzle - depending upon sensor mode) value returned w/ range measurement
-      uint8_t sick_telegram_index;                                             ///< Telegram index modulo 256
-      uint8_t sick_real_time_scan_index;                                       ///< If real-time scan indices are requested, this value is set (modulo 256)
-    } sick_pls_scan_profile_c4_t;
-    
+        
+
     /** Constructor */
     SickPLS( const std::string sick_device_path );
     
@@ -532,111 +274,19 @@ namespace SickToolbox {
     /** Gets the scan resolution currently being used by the device */
     double GetSickScanResolution( ) const throw( SickConfigException );
 
-    /** Set the measurement units of the device (in EEPROM) */
-    void SetSickMeasuringUnits( const sick_pls_measuring_units_t sick_units = SICK_MEASURING_UNITS_MM )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException );
-
     /** Get the current measurement units of the device */
     SickPLS::sick_pls_measuring_units_t GetSickMeasuringUnits( ) const throw( SickConfigException );
-    
-    /** Sets the sensitivity value for the device (in EEPROM). NOTE: Only applies to PLS 211/221/291 models. */
-    void SetSickSensitivity( const sick_pls_sensitivity_t sick_sensitivity = SICK_SENSITIVITY_STANDARD )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException );
-
-    /** Get the current Sick PLS sensitivity level. NOTE: Only applies to PLS 211/221/291 models. */
-    sick_pls_sensitivity_t GetSickSensitivity( ) const throw( SickConfigException );
-
-    /** Sets the peak threshold mode for the device (in EEPROM). NOTE: Only applies to PLS 200/220 models */
-    void SetSickPeakThreshold( const sick_pls_peak_threshold_t sick_peak_threshold = SICK_PEAK_THRESHOLD_DETECTION_WITH_NO_BLACK_EXTENSION )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException );
-    
-    /** Get the current Sick PLS sensitivity level. NOTE: Only applies to PLS 211/221/291 models. */
-    sick_pls_peak_threshold_t GetSickPeakThreshold( ) const throw( SickConfigException );;
-    
-    /** Sets the measuring mode for the device (in EEPROM). See page 98 of the telegram listing for more details. */
-    void SetSickMeasuringMode( const sick_pls_measuring_mode_t sick_measuring_mode = SICK_MS_MODE_8_OR_80_FA_FB_DAZZLE )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException );
-
-    /** Get the current Sick PLS measuring mode */
-    sick_pls_measuring_mode_t GetSickMeasuringMode( ) const throw( SickConfigException );
-
+        
     /** Get the current Sick PLS operating mode */
     sick_pls_operating_mode_t GetSickOperatingMode( ) const throw( SickConfigException );
     
-    /** Sets the availability of the device (in EEPROM). See page 98 of the telegram listing for more details. */
-    void SetSickAvailability( const uint8_t sick_availability_flags = SICK_FLAG_AVAILABILITY_DEFAULT )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException );
-
-    /** Gets the current availability flags for the device */
-    uint8_t GetSickAvailability( ) const throw( SickConfigException );
-    
-    /** Sets the variant type for the device (in EEPROM) */
-    void SetSickVariant( const sick_pls_scan_angle_t scan_angle, const sick_pls_scan_resolution_t scan_resolution )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
-
     /** Gets measurement data from the Sick. NOTE: Data can be either range or reflectivity given the Sick mode. */
     void GetSickScan( unsigned int * const measurement_values,
-		      unsigned int & num_measurement_values,
-		      unsigned int * const sick_field_a_values = NULL,
-		      unsigned int * const sick_field_b_values = NULL,
-		      unsigned int * const sick_field_c_values = NULL,
-		      unsigned int * const sick_telegram_index = NULL,
-		      unsigned int * const sick_real_time_scan_index = NULL ) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
-
-    /** Gets range and reflectivity data from the Sick. NOTE: This only applies to Sick PLS 211/221/291-S14! */
-    void GetSickScan( unsigned int * const range_values,
-		      unsigned int * const reflect_values,
-		      unsigned int & num_range_measurements,
-		      unsigned int & num_reflect_measurements,
-		      unsigned int * const sick_field_a_values = NULL,
-		      unsigned int * const sick_field_b_values = NULL,
-		      unsigned int * const sick_field_c_values = NULL,
-		      unsigned int * const sick_telegram_index = NULL,
-		      unsigned int * const sick_real_time_scan_index = NULL ) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
-
-    /** Gets measurement data from the Sick. NOTE: Data can be either range or reflectivity given the Sick mode. */
-    void GetSickScanSubrange( const uint16_t sick_subrange_start_index,
-			      const uint16_t sick_subrange_stop_index,
-			      unsigned int * const measurement_values,
-			      unsigned int & num_measurement_values,
-			      unsigned int * const sick_field_a_values = NULL,
-			      unsigned int * const sick_field_b_values = NULL,
-			      unsigned int * const sick_field_c_values = NULL,
-			      unsigned int * const sick_telegram_index = NULL,
-			      unsigned int * const sick_real_time_scan_index = NULL ) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
-    
-    /** Gets partial scan measurements from the Sick PLS. NOTE: Data can be either range or reflectivity depending upon the given Sick mode. */
-    void GetSickPartialScan( unsigned int * const measurement_values,
-			     unsigned int & num_measurement_values,
-			     unsigned int & partial_scan_index,
-			     unsigned int * const sick_field_a_values = NULL,
-			     unsigned int * const sick_field_b_values = NULL,
-			     unsigned int * const sick_field_c_values = NULL,
-			     unsigned int * const sick_telegram_index = NULL,
-			     unsigned int * const sick_real_time_scan_index = NULL ) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
-
-    /** Gets mean measured values from the Sick PLS */
-    void GetSickMeanValues( const uint8_t sick_sample_size,
-			    unsigned int * const measurement_values,
-			    unsigned int & num_measurement_values,
-			    unsigned int * const sick_telegram_index = NULL,
-			    unsigned int * const sick_real_time_index = NULL ) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException );
-
-    /** Gets mean measured values from the Sick PLS */
-    void GetSickMeanValuesSubrange( const uint8_t sick_sample_size,
-				    const uint16_t sick_subrange_start_index,
-				    const uint16_t sick_subrange_stop_index,
-				    unsigned int * const measurement_values,
-				    unsigned int & num_measurement_values,
-				    unsigned int * const sick_telegram_index = NULL,
-				    unsigned int * const sick_real_time_index = NULL ) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException );
+		      unsigned int & num_measurement_values) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
 
     /** Acquire the Sick PLS status */
     sick_pls_status_t GetSickStatus( ) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException );
 
-    /** Indicates whether the Sick is an PLS Fast */
-    bool IsSickPLSFast( ) const throw( SickConfigException );
-    
     /** Resets Sick PLS field values */
     void ResetSick( ) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException );
     
@@ -688,16 +338,7 @@ namespace SickToolbox {
     static std::string SickStatusToString( const sick_pls_status_t sick_status );
     
     /** Converts the PLS's measuring mode to a corresponding string */
-    static std::string SickMeasuringModeToString( const sick_pls_measuring_mode_t sick_measuring_mode );
-
-    /** Converts the PLS's measuring mode to a corresponding string */
     static std::string SickOperatingModeToString( const sick_pls_operating_mode_t sick_operating_mode );
-    
-    /** Converts the PLS's sensitivity to string */
-    static std::string SickSensitivityToString( const sick_pls_sensitivity_t sick_sensitivity );
-
-    /** Converts the PLS's peak threshold to string */
-    static std::string SickPeakThresholdToString( const sick_pls_peak_threshold_t sick_peak_threshold );
     
     /** Converts the PLS's measuring units to a corresponding string */
     static std::string SickMeasuringUnitsToString( const sick_pls_measuring_units_t sick_units );    
@@ -722,32 +363,11 @@ namespace SickToolbox {
     /** The current software version being run on the device */
     sick_pls_software_status_t _sick_software_status;
 
-    /** The restart configuration of the device */
-    sick_pls_restart_status_t _sick_restart_status;
-
-    /** The pollution measurement status */
-    sick_pls_pollution_status_t _sick_pollution_status;
-
-    /** The signal status of the device */
-    sick_pls_signal_status_t _sick_signal_status;
-
-    /** The field configuration for the device */
-    sick_pls_field_status_t _sick_field_status;
-
     /** The baud configuration of the device */
     sick_pls_baud_status_t _sick_baud_status;
 
     /** The device configuration for the Sick */
     sick_pls_device_config_t _sick_device_config;
-
-    /** Used when the device is streaming mean values */
-    uint8_t _sick_mean_value_sample_size;
-
-    /** Used when the device is streaming a scan subrange */
-    uint16_t _sick_values_subrange_start_index;
-
-    /** Used when the device is streaming a scan subrange */
-    uint16_t _sick_values_subrange_stop_index;
     
     /** Stores information about the original terminal settings */
     struct termios _old_term;
@@ -788,9 +408,6 @@ namespace SickToolbox {
 
     /** Gets the current Sick configuration settings */
     void _getSickConfig( ) throw( SickTimeoutException, SickIOException, SickThreadException );
-
-    /** Sets the Sick configuration in flash */
-    void _setSickConfig( const sick_pls_device_config_t &sick_config ) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException );
     
     /** Gets the status of the PLS */
     void _getSickStatus( ) throw( SickTimeoutException, SickIOException, SickThreadException );
@@ -815,26 +432,6 @@ namespace SickToolbox {
     /** Switch Sick PLS to monitor mode (stream range) */
     void _setSickOpModeMonitorStreamValues( )
       throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
-
-    /** Switch Sick PLS to monitor mode (stream range and reflectivity) */
-    void _setSickOpModeMonitorStreamRangeAndReflectivity( )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
-
-    /** Switch Sick PLS to monitor mode (stream range from a partial scan) */
-    void _setSickOpModeMonitorStreamValuesFromPartialScan( )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
-
-    /** Switch Sick PLS to monitor mode (stream mean measured values) */
-    void _setSickOpModeMonitorStreamMeanValues( const uint8_t sample_size )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
-
-    /** Switch Sick PLS to monitor mode (stream mean measured values) */
-    void _setSickOpModeMonitorStreamValuesSubrange( const uint16_t subrange_start_index, const uint16_t subrange_stop_index )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
-
-    /** Switch Sick PLS to monitor mode (stream mean measured values subrange) */
-    void _setSickOpModeMonitorStreamMeanValuesSubrange( const uint16_t sample_size, const uint16_t subrange_start_index, const uint16_t subrange_stop_index )
-      throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException);
     
     /** Switches the operating mode of the PLS. */
     void _switchSickOperatingMode( const uint8_t sick_mode, const uint8_t * const mode_params = NULL )
@@ -843,18 +440,6 @@ namespace SickToolbox {
     /** Parses the scan profile returned w/ message B0 */
     void _parseSickScanProfileB0( const uint8_t * const src_buffer, sick_pls_scan_profile_b0_t &sick_scan_profile ) const;
 
-    /** Parses the scan profile returned w/ message B6 */
-    void _parseSickScanProfileB6( const uint8_t * const src_buffer, sick_pls_scan_profile_b6_t &sick_scan_profile ) const;
-
-    /** Parses the scan profile returned w/ message B6 */
-    void _parseSickScanProfileB7( const uint8_t * const src_buffer, sick_pls_scan_profile_b7_t &sick_scan_profile ) const;
-
-    /** Parses the scan profile returned w/ message BF */
-    void _parseSickScanProfileBF( const uint8_t * const src_buffer, sick_pls_scan_profile_bf_t &sick_scan_profile ) const;
-    
-    /** Parses the scan profile returned w/ message C4 */
-    void _parseSickScanProfileC4( const uint8_t * const src_buffer, sick_pls_scan_profile_c4_t &sick_scan_profile ) const;
-
     /** A function for parsing a byte sequence into a device config structure */
     void _parseSickConfigProfile( const uint8_t * const src_buffer, sick_pls_device_config_t &sick_device_config ) const;
 
@@ -862,9 +447,6 @@ namespace SickToolbox {
     void _extractSickMeasurementValues( const uint8_t * const byte_sequence, const uint16_t num_measurements, uint16_t * const measured_values,
 					uint8_t * const field_a_values = NULL, uint8_t * const field_b_values = NULL, uint8_t * const field_c_values = NULL ) const;
     
-    /** Tells whether the device is returning real-time indices */
-    bool _returningRealTimeIndices( ) const { return _sick_device_config.sick_availability_level & SICK_FLAG_AVAILABILITY_REAL_TIME_INDICES; }
-
     /** Indicates whether the given unit value is defined */
     bool _validSickMeasuringUnits( const sick_pls_measuring_units_t sick_units ) const;
 
@@ -874,53 +456,11 @@ namespace SickToolbox {
     /** Indicates whether the given scan resolution is defined */
     bool _validSickScanResolution( const sick_pls_scan_resolution_t sick_scan_resolution ) const;
 
-    /** Indicates whether the given sensitivity is defined */
-    bool _validSickSensitivity( const sick_pls_sensitivity_t sick_sensitivity ) const;
-
-    /** Indicates whether the given peak threshold is defined */
-    bool _validSickPeakThreshold( const sick_pls_peak_threshold_t sick_peak_threshold ) const;
-    
-    /** Indicates whether the given sensitivity is defined */
-    bool _validSickMeasuringMode( const sick_pls_measuring_mode_t sick_measuring_mode ) const;
-
-    /** Indicates whether the Sick PLS is type 200 */
-    bool _isSickPLS200( ) const;
-    
-    /** Indicates whether the Sick PLS is type 211 */
-    bool _isSickPLS211( ) const;
-    
-    /** Indicates whether the Sick PLS is type 220 */
-    bool _isSickPLS220( ) const;
-    
-    /** Indicates whether the Sick PLS is type 221 */
-    bool _isSickPLS221( ) const;
-    
-    /** Indicates whether the Sick PLS is type 291 */
-    bool _isSickPLS291( ) const;
-
     /** Indicates whether the Sick PLS type is unknown */
     bool _isSickUnknown( ) const;
     
     /** Given a baud rate as an integer, gets a PLS baud rate command. */
     sick_pls_baud_t _baudToSickBaud( const int baud_rate ) const;
-
-    /** Given a bytecode representing Sick PLS availability, returns a corresponding string */
-    std::string _sickAvailabilityToString( const uint8_t availability_code ) const;
-
-    /** Given a bytecode representing Sick PLS restart mode, returns a corresponding string */
-    std::string _sickRestartToString( const uint8_t restart_code ) const;
-    
-    /** Converts the PLS's temporary field value to a string */
-    std::string _sickTemporaryFieldToString( const uint8_t temp_field_code ) const;
-
-    /** Converts the PLS's subtractive field value to a string */
-    std::string _sickSubtractiveFieldsToString( const uint8_t subt_field_code ) const;
-
-    /** Converts the PLS's contour function status code to a string */
-    std::string _sickContourFunctionToString( const uint8_t contour_function_code ) const;
-    
-    /** Converts the PLS's variant to a corresponding string */
-    std::string _sickVariantToString( const unsigned int sick_variant ) const;
 
   };
 
@@ -930,11 +470,6 @@ namespace SickToolbox {
    */
   typedef SickPLS::sick_pls_type_t sick_pls_type_t;
 
-  /*!
-   * \typedef sick_pls_variant_t
-   * \brief Makes working w/ SickPLS::sick_pls_variant_t a bit easier
-   */
-  typedef SickPLS::sick_pls_variant_t sick_pls_variant_t;
 
   /*!
    * \typedef sick_pls_scan_angle_t
@@ -953,30 +488,12 @@ namespace SickToolbox {
    * \brief Makes working w/ SickPLS::sick_pls_measuring_units_t a bit easier
    */
   typedef SickPLS::sick_pls_measuring_units_t sick_pls_measuring_units_t;
-
-  /*!
-   * \typedef sick_pls_sensitivity_t
-   * \brief Makes working w/ SickPLS::sick_pls_sensitivity_t a bit easier
-   */
-  typedef SickPLS::sick_pls_sensitivity_t sick_pls_sensitivity_t;
-
-  /*!
-   * \typedef sick_pls_peak_threshold_t
-   * \brief Makes working w/ SickPLS::sick_pls_peak_threshold_t a bit easier
-   */
-  typedef SickPLS::sick_pls_peak_threshold_t sick_pls_peak_threshold_t;
   
   /*!
    * \typedef sick_pls_status_t
    * \brief Makes working w/ SickPLS::sick_pls_status_t a bit easier
    */
   typedef SickPLS::sick_pls_status_t sick_pls_status_t;
-
-  /*!
-   * \typedef sick_pls_measuring_mode_t
-   * \brief Makes working w/ SickPLS::sick_pls_measuring_mode_t a bit easier
-   */
-  typedef SickPLS::sick_pls_measuring_mode_t sick_pls_measuring_mode_t;
 
   /*!
    * \typedef sick_pls_operating_mode_t
