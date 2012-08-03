@@ -955,7 +955,6 @@ namespace SickToolbox {
   void SickPLS::_setSessionBaud(const sick_pls_baud_t baud_rate) throw ( SickIOException, SickThreadException, SickTimeoutException ){
     
     //PLS-specific before session baud can be set, we need to enter setup mode (setup in PLS software, called installation in SickToolbox)
-    std::cout<< "Switching mode "<<std::endl;
 
     _setSickOpModeInstallation();
     
@@ -1704,7 +1703,7 @@ namespace SickToolbox {
       throw SickConfigException("SickPLS::_switchSickOperatingMode: Unrecognized operating mode!");
     }
 
-    message.Print();
+    //    message.Print();
 
     try {
       
