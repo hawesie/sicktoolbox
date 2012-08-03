@@ -45,17 +45,15 @@ namespace SickToolbox {
   SickPLS::SickPLS( const std::string sick_device_path ): SickLIDAR< SickPLSBufferMonitor, SickPLSMessage >( ),
 								_sick_device_path(sick_device_path),
 								_curr_session_baud(SICK_BAUD_UNKNOWN),
-								_desired_session_baud(SICK_BAUD_UNKNOWN),
-								_sick_type(SICK_PLS_TYPE_UNKNOWN)
-  {
+								_desired_session_baud(SICK_BAUD_UNKNOWN)  {
     
     /* Initialize the protected/private structs */
     memset(&_sick_operating_status,0,sizeof(sick_pls_operating_status_t));
-    memset(&_sick_software_status,0,sizeof(sick_pls_software_status_t));
     memset(&_sick_baud_status,0,sizeof(sick_pls_baud_status_t));
-    memset(&_sick_device_config,0,sizeof(sick_pls_device_config_t));
     memset(&_old_term,0,sizeof(struct termios));
-    
+
+    //start in an unknown mode
+    _sick_operating_status.sick_operating_mode  = SICK_OP_MODE_UNKNOWN;   
   }
 
   /**
@@ -116,7 +114,9 @@ namespace SickToolbox {
 
       try {
 
-	std::cout << "\tAttempting to set requested baud rate..." << std::endl;
+	std::cout << "\tAttempting to set session baud rate to "
+		  << SickPLS::SickBaudToString(_desired_session_baud) 
+		  << " as requested..." << std::endl;
 	_setSessionBaud(_desired_session_baud);
 	
       }
@@ -161,12 +161,6 @@ namespace SickToolbox {
       /* Set the device to request range mode */
       _setSickOpModeMonitorRequestValues();
       
-      /* Acquire the type of device that we are working with */
-      std::cout << "\tAttempting to sync driver..." << std::endl << std::flush;
-      _getSickType();     // Get the Sick device type string
-      _getSickStatus();   // Get the Sick device status
-      _getSickConfig();   // Get the Sick current config
-      std::cout << "\t\tDriver synchronized!" << std::endl << std::flush;
 
       /* Set the flag */
       _sick_initialized = true;
@@ -205,7 +199,6 @@ namespace SickToolbox {
 
     /* Initialization was successful! */
     std::cout << "\t*** Init. complete: Sick PLS is online and ready!" << std::endl; 
-    std::cout << "\tSick Type: " << SickTypeToString(GetSickType()) << std::endl;
     std::cout << "\tScan Angle: " << GetSickScanAngle() << " (deg)" << std::endl;  
     std::cout << "\tScan Resolution: " << GetSickScanResolution() << " (deg)" << std::endl;
     std::cout << "\tMeasuring Units: " << SickMeasuringUnitsToString(GetSickMeasuringUnits()) << std::endl;
@@ -287,21 +280,6 @@ namespace SickToolbox {
     return _sick_device_path;
   }
   
-  /**
-   * \brief Gets the Sick PLS type
-   * \return The device type
-   */
-  sick_pls_type_t SickPLS::GetSickType( ) const throw( SickConfigException ) {
-
-    /* Ensure the device is initialized */
-    if (!_sick_initialized) {
-      throw SickConfigException("SickPLS::GetSickType: Sick PLS is not initialized!");
-    }
-
-    /* Return the Sick PLS type */
-    return _sick_type;
-    
-  }
 
   /**
    * \brief Gets the current scan angle of the device
@@ -471,54 +449,7 @@ namespace SickToolbox {
   }
 
 
-  /**
-   * \brief Acquire the Sick PLS status
-   * \return The status of the device
-   *
-   * NOTE: This method also updated the local view of all other information
-   *       returned with a status request.
-   */
-  sick_pls_status_t SickPLS::GetSickStatus( ) throw( SickConfigException, SickTimeoutException, SickIOException, SickThreadException ) {
 
-    /* Ensure the device is initialized */
-    if (!_sick_initialized) {
-      throw SickConfigException("SickPLS::GetSickStatus: Sick PLS is not initialized!");
-    }
-    
-    try {
-      
-      /* Refresh the status info! */
-      _getSickStatus();
-
-    }
-
-    /* Catch any timeout exceptions */
-    catch(SickTimeoutException &sick_timeout_exception) {
-      std::cerr << sick_timeout_exception.what() << std::endl;
-      throw;
-    }
-      
-    /* Catch any I/O exceptions */
-    catch(SickIOException &sick_io_exception) {
-      std::cerr << sick_io_exception.what() << std::endl;
-      throw;
-    }
-    
-    /* Catch any thread exceptions */
-    catch(SickThreadException &sick_thread_exception) {
-      std::cerr << sick_thread_exception.what() << std::endl;
-      throw;
-    }
-    
-    /* Catch anything else */
-    catch(...) {
-      std::cerr << "SickPLS::GetSickStatus: Unknown exception!" << std::endl;
-      throw;
-    }
-
-    /* Return the latest Sick status */
-    return (sick_pls_status_t)_sick_operating_status.sick_device_status;
-  }
 
    
   /**
@@ -610,7 +541,6 @@ namespace SickToolbox {
     /* If Sick is initialized then print the status! */
     if (_sick_initialized) {
 
-      str_stream << "\tSensor Status: " << SickStatusToString((sick_pls_status_t)_sick_operating_status.sick_device_status) << std::endl;
       str_stream << "\tScan Angle: " << GetSickScanAngle() << " (deg)" << std::endl;
       str_stream << "\tScan Resolution: " << GetSickScanResolution() << " (deg)" << std::endl;
       str_stream << "\tOperating Mode: " << SickOperatingModeToString(GetSickOperatingMode()) << std::endl;
@@ -628,95 +558,9 @@ namespace SickToolbox {
     return str_stream.str();
   }
 
-  /**
-   * \brief Acquire the Sick PLS's operating params as a printable string
-   * \return The Sick PLS operating params as a well-formatted string
-   */
-  std::string SickPLS::GetSickSoftwareVersionAsString( ) const {
 
-    std::stringstream str_stream;
-    
-    str_stream << "\t============== Sick PLS Software ==============" << std::endl;
-
-    if (_sick_initialized) {
-    
-      str_stream << "\tSystem Software: " << std::string((char *)_sick_software_status.sick_system_software_version) << std::endl;
-      str_stream << "\tSystem Boot PROM Software: " << std::string((char *)_sick_software_status.sick_prom_software_version) << std::endl;
-
-    }
-    else {
-      
-      str_stream << "\t Unknown (Device is not initialized)" << std::endl;
-      
-    }
-    
-    str_stream << "\t===============================================" << std::endl;
-
-    return str_stream.str();
-  }
-
-  /**
-   * \brief Acquire the Sick PLS's config as a printable string
-   * \return The Sick PLS config as a well-formatted string
-   */
-  std::string SickPLS::GetSickConfigAsString( ) const {
-
-    std::stringstream str_stream;
-
-    str_stream<< "\t=============== Sick PLS Config ===============" << std::endl;
-
-    if (_sick_initialized) {
   
-      str_stream << "\tBlanking Value: " << _sick_device_config.sick_blanking << std::endl;
-      str_stream << "\tMeasuring Units: " << SickMeasuringUnitsToString((sick_pls_measuring_units_t)_sick_device_config.sick_measuring_units) << std::endl;      
-    }
-    else {
-      
-      str_stream << "\t Unknown (Device is not initialized)" << std::endl;
-      
-    }
-
-    str_stream << "\t===============================================" << std::endl;
-    
-    return str_stream.str();
-  }
   
-  /**
-   * \brief Prints ths status of the Sick PLS unit
-   */
-  void SickPLS::PrintSickStatus() const {
-    std::cout << GetSickStatusAsString() << std::endl;
-  }
-
-  /**
-   * \brief Prints out relevant software versioning information
-   */
-  void SickPLS::PrintSickSoftwareVersion() const {
-    std::cout << GetSickSoftwareVersionAsString() << std::endl;  
-  }
-
-  /**
-   * \brief Prints out the Sick PLS configurations parameters
-   */
-  void SickPLS::PrintSickConfig() const {
-    std::cout << GetSickConfigAsString() << std::endl;
-  }
-  
-  /**
-   * \brief Converts the Sick PLS type to a corresponding string
-   * \param sick_type The device type
-   * \return Sick PLS type as a string
-   */
-  std::string SickPLS::SickTypeToString( const sick_pls_type_t sick_type ) {
-
-    switch(sick_type) {
-    // case SICK_PLS_TYPE_291_S15:
-    //   return "Sick PLS 291-S15";
-    default:
-      return "Unknown!";
-    }
-    
-  }
 
   /**
    * \brief Converts integer to corresponding Sick PLS scan angle
@@ -906,7 +750,7 @@ namespace SickToolbox {
     try {
     
       /* Open the device */
-      if((_sick_fd = open(_sick_device_path.c_str(), O_RDWR | O_NOCTTY)) < 0) {
+      if((_sick_fd = open(_sick_device_path.c_str(), O_RDWR | O_NOCTTY | O_NDELAY)) < 0) {
 	throw SickIOException("SickPLS::_setupConnection: - Unable to open serial port");
       }
       
@@ -1012,7 +856,12 @@ namespace SickToolbox {
 					    const unsigned int num_tries ) throw( SickIOException, SickThreadException, SickTimeoutException ) {
 
     uint8_t sick_reply_code = send_message.GetCommandCode() + 0x80;
+
+    // std::cout.setf(std::ios::hex,std::ios::basefield);
+    // std::cout << "Waiting for reply code: " << (unsigned int) sick_reply_code << std::endl;
+    // std::cout.setf(std::ios::dec,std::ios::basefield);
     
+
     try {
 
       /* Send a message and get reply using a reply code */
@@ -1066,7 +915,11 @@ namespace SickToolbox {
       _flushTerminalBuffer();
       
       /* Send a message and get reply using parent's method */
-      SickLIDAR< SickPLSBufferMonitor, SickPLSMessage >::_sendMessageAndGetReply(send_message,recv_message,&reply_code,1,DEFAULT_SICK_PLS_BYTE_INTERVAL,timeout_value,num_tries);
+      SickLIDAR< SickPLSBufferMonitor, SickPLSMessage >::_sendMessageAndGetReply(send_message,
+										 recv_message,
+										 &reply_code, 1, 
+										 DEFAULT_SICK_PLS_BYTE_INTERVAL,
+										 timeout_value, num_tries);
 
     }
     
@@ -1101,6 +954,15 @@ namespace SickToolbox {
    */
   void SickPLS::_setSessionBaud(const sick_pls_baud_t baud_rate) throw ( SickIOException, SickThreadException, SickTimeoutException ){
     
+    //PLS-specific before session baud can be set, we need to enter setup mode (setup in PLS software, called installation in SickToolbox)
+    std::cout<< "Switching mode "<<std::endl;
+
+    _setSickOpModeInstallation();
+    
+    std::cout<< "Setting session baud from operating mode: "
+	     << _sick_operating_status.sick_operating_mode
+	     << std::endl;
+
     SickPLSMessage message, response;
     
     uint8_t payload[SickPLSMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
@@ -1116,6 +978,8 @@ namespace SickToolbox {
     
     message.BuildMessage(DEFAULT_SICK_PLS_SICK_ADDRESS,payload,2);
     
+    message.Print();
+
     try {
 
       /* Send the status request and get a reply */
@@ -1226,6 +1090,11 @@ namespace SickToolbox {
 
     struct termios term;
 
+    term.c_iflag |= INPCK;
+    term.c_iflag &= ~IXOFF;
+    term.c_cflag |= PARENB;
+
+
 #ifdef HAVE_LINUX_SERIAL_H
     struct serial_struct serial;
 #endif
@@ -1288,24 +1157,44 @@ namespace SickToolbox {
       switch(baud_rate) {      
       case SICK_BAUD_9600: {
 	cfmakeraw(&term);
+
+      term.c_iflag |= INPCK;
+      term.c_iflag &= ~IXOFF;
+      term.c_cflag |= PARENB;
+
 	cfsetispeed(&term,B9600);
 	cfsetospeed(&term,B9600);
 	break;
       }
       case SICK_BAUD_19200: {
 	cfmakeraw(&term);
+
+      term.c_iflag |= INPCK;
+      term.c_iflag &= ~IXOFF;
+      term.c_cflag |= PARENB;
+
 	cfsetispeed(&term,B19200);
 	cfsetospeed(&term,B19200);
 	break;
       }
       case SICK_BAUD_38400: {
 	cfmakeraw(&term);
+
+      term.c_iflag |= INPCK;
+      term.c_iflag &= ~IXOFF;
+      term.c_cflag |= PARENB;
+
 	cfsetispeed(&term,B38400);
 	cfsetospeed(&term,B38400);            
 	break;
       }
       case SICK_BAUD_500K: {      
 	cfmakeraw(&term);
+
+      term.c_iflag |= INPCK;
+      term.c_iflag &= ~IXOFF;
+      term.c_cflag |= PARENB;
+
 	cfsetispeed(&term,B38400);
 	cfsetospeed(&term,B38400);
 	break;
@@ -1347,181 +1236,6 @@ namespace SickToolbox {
 
   }
 
-  /**
-   * \brief Acquires the sick device type (as a string) from the unit
-   */
-  void SickPLS::_getSickType( ) throw( SickTimeoutException, SickIOException, SickThreadException ) {
-    
-    SickPLSMessage message,response;
-    
-    int payload_length;
-    uint8_t payload_buffer[SickPLSMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
-    
-    /* Get the PLS type */
-    payload_buffer[0] = 0x3A; //Command to request PLS type
-    
-    /* Build the message */
-    message.BuildMessage(DEFAULT_SICK_PLS_SICK_ADDRESS,payload_buffer,1);
-
-    try {
-       
-      /* Send the status request and get a reply */
-      _sendMessageAndGetReply(message,response,DEFAULT_SICK_PLS_SICK_MESSAGE_TIMEOUT,DEFAULT_SICK_PLS_NUM_TRIES);
-      
-    }
-    
-    /* Catch any timeout exceptions */
-    catch(SickTimeoutException &sick_timeout_exception) {
-      std::cerr << sick_timeout_exception.what() << std::endl;
-      throw;
-    }
-    
-    /* Catch any I/O exceptions */
-    catch(SickIOException &sick_io_exception) {
-      std::cerr << sick_io_exception.what() << std::endl;
-      throw;
-    }
-    
-    /* Catch any thread exceptions */
-    catch(SickThreadException &sick_thread_exception) {
-      std::cerr << sick_thread_exception.what() << std::endl;
-      throw;
-    }
-    
-    /* Catch anything else */
-    catch(...) {
-      std::cerr << "SickPLS::_getSickType: Unknown exception!!!" << std::endl;
-      throw;
-    }
-    
-    /* Reset the buffer */
-    memset(payload_buffer,0,1);
-  
-    /* Get the payload */
-    response.GetPayload(payload_buffer);
-    
-    /* Acquire the payload length */
-    payload_length = response.GetPayloadLength();
-    
-    /* Dynamically allocate the string length */
-    char * string_buffer = new char[payload_length-1];
-
-    /* Initialize the buffer */
-    memset(string_buffer,0,payload_length-1);
-    memcpy(string_buffer,&payload_buffer[1],payload_length-2);
-
-    /* Convert to a standard string */
-    std::string type_string = string_buffer;
-
-    /* Set the Sick PLS type in the driver */
-	//TODO : restore types
-    // if(type_string.find("PLS200;30106") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_200_30106;
-    // } else if(type_string.find("PLS211;30106") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_211_30106;
-    // } else if(type_string.find("PLS211;30206") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_211_30206;
-    // } else if(type_string.find("PLS211;S07") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_211_S07;
-    // } else if(type_string.find("PLS211;S14") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_211_S14;
-    // } else if(type_string.find("PLS211;S15") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_211_S15;
-    // } else if(type_string.find("PLS211;S19") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_211_S19;
-    // } else if(type_string.find("PLS211;S20") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_211_S20;
-    // } else if(type_string.find("PLS220;30106") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_220_30106;
-    // } else if(type_string.find("PLS221;30106") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_221_30106;
-    // } else if(type_string.find("PLS221;30206") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_221_30206;
-    // } else if(type_string.find("PLS221;S07") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_221_S07;
-    // } else if(type_string.find("PLS221;S14") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_221_S14;
-    // } else if(type_string.find("PLS221;S15") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_221_S15;
-    // } else if(type_string.find("PLS221;S16") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_221_S16;
-    // } else if(type_string.find("PLS221;S19") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_221_S19;
-    // } else if(type_string.find("PLS221;S20") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_221_S20;
-    // } else if(type_string.find("PLS291;S05") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_291_S05;
-    // } else if(type_string.find("PLS291;S14") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_291_S14;
-    // } else if(type_string.find("PLS291;S15") != std::string::npos) {
-    //   _sick_type = SICK_PLS_TYPE_291_S15;
-    //} else {
-      _sick_type = SICK_PLS_TYPE_UNKNOWN;
-    //}
-
-    /* Reclaim the allocated string buffer */
-    if (string_buffer) {
-      delete [] string_buffer;
-    }
-    
-  }
-
-  /**
-   * \brief Acquires (and buffers) the current Sick PLS configuration from the device
-   */
-  void SickPLS::_getSickConfig( ) throw( SickTimeoutException, SickIOException, SickThreadException ) {
-
-     SickPLSMessage message, response;
-
-     uint8_t payload_buffer[SickPLSMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};    
-
-     /* Set the command code */
-     payload_buffer[0] = 0x74;
-
-     /* Build the request message */
-     message.BuildMessage(DEFAULT_SICK_PLS_SICK_ADDRESS,payload_buffer,1);
-
-     try {
-       
-       /* Send the status request and get a reply */
-       _sendMessageAndGetReply(message,response,DEFAULT_SICK_PLS_SICK_MESSAGE_TIMEOUT,DEFAULT_SICK_PLS_NUM_TRIES);
-       
-     }
-
-     /* Catch any timeout exceptions */
-     catch(SickTimeoutException &sick_timeout_exception) {
-       std::cerr << sick_timeout_exception.what() << std::endl;
-       throw;
-     }
-     
-     /* Catch any I/O exceptions */
-     catch(SickIOException &sick_io_exception) {
-       std::cerr << sick_io_exception.what() << std::endl;
-       throw;
-     }
-     
-     /* Catch any thread exceptions */
-     catch(SickThreadException &sick_thread_exception) {
-       std::cerr << sick_thread_exception.what() << std::endl;
-       throw;
-     }
-     
-     /* Catch anything else */
-     catch(...) {
-       std::cerr << "SickPLS::_getSickConfig: Unknown exception!!!" << std::endl;
-       throw;
-     }
-
-     /* Reset the payload buffer */
-     payload_buffer[0] = 0;
-
-     /* Extract the payload */
-     response.GetPayload(payload_buffer);
-
-     /* Obtain the configuration results */
-     _parseSickConfigProfile(&payload_buffer[1],_sick_device_config);
-     
-  }
 
  
   /**
@@ -1602,291 +1316,7 @@ namespace SickToolbox {
 
   }
   
-  /**
-   * \brief Acquires (and buffers) the status of the Sick PLS
-   */
-  void SickPLS::_getSickStatus( ) throw( SickTimeoutException, SickIOException, SickThreadException ) {
 
-    SickPLSMessage message,response;
-
-    uint8_t payload_buffer[SickPLSMessage::MESSAGE_PAYLOAD_MAX_LENGTH] = {0};
-
-    /* The command to request PLS status */
-    payload_buffer[0] = 0x31;
-
-    /* Build the request message */
-    message.BuildMessage(DEFAULT_SICK_PLS_SICK_ADDRESS,payload_buffer,1);
-
-    try {
-    
-      /* Send the status request and get a reply */
-      _sendMessageAndGetReply(message,response,DEFAULT_SICK_PLS_SICK_MESSAGE_TIMEOUT,DEFAULT_SICK_PLS_NUM_TRIES);
-
-    }
-    
-    /* Catch any timeout exceptions */
-    catch(SickTimeoutException &sick_timeout_exception) {
-      std::cerr << sick_timeout_exception.what() << std::endl;
-      throw;
-    }
-    
-    /* Catch any I/O exceptions */
-    catch(SickIOException &sick_io_exception) {
-      std::cerr << sick_io_exception.what() << std::endl;
-      throw;
-    }
-    
-    /* Catch any thread exceptions */
-    catch(SickThreadException &sick_thread_exception) {
-      std::cerr << sick_thread_exception.what() << std::endl;
-      throw;
-    }
-    
-    /* Catch anything else */
-    catch(...) {
-      std::cerr << "SickPLS::_getSickStatus: Unknown exception!" << std::endl;
-      throw;
-    }
-
-    /* Reset the payload buffer */
-    payload_buffer[0] = 0;
-
-    /* Extract the payload contents */
-    response.GetPayload(payload_buffer);
-    
-    /*
-     * Extract the current Sick PLS operating config
-     */
-
-    /* Buffer the Sick PLS operating mode */
-    _sick_operating_status.sick_operating_mode = payload_buffer[8];
-    
-    /* Buffer the status code */
-    _sick_operating_status.sick_device_status = (payload_buffer[9]) ? SICK_STATUS_ERROR : SICK_STATUS_OK;
-    
-    /* Buffer the number of motor revolutions */
-    memcpy(&_sick_operating_status.sick_num_motor_revs,&payload_buffer[67],2);
-    _sick_operating_status.sick_num_motor_revs = sick_pls_to_host_byte_order(_sick_operating_status.sick_num_motor_revs);
-    
-    /* Buffer the measuring mode of the device */
-    _sick_operating_status.sick_measuring_mode = payload_buffer[102];
-    
-    /* Buffer the scan angle of the device */
-    memcpy(&_sick_operating_status.sick_scan_angle,&payload_buffer[107],2);
-    _sick_operating_status.sick_scan_angle =
-      sick_pls_to_host_byte_order(_sick_operating_status.sick_scan_angle);
-    
-    /* Buffer the angular resolution of the device */
-    memcpy(&_sick_operating_status.sick_scan_resolution,&payload_buffer[109],2);
-    _sick_operating_status.sick_scan_resolution =
-      sick_pls_to_host_byte_order(_sick_operating_status.sick_scan_resolution);
-
-    // /* Buffer the variant type */
-    // _sick_operating_status.sick_variant = payload_buffer[18];
-    
-    /* Buffer the Sick PLS address */
-    _sick_operating_status.sick_address = payload_buffer[120];
-    
-    /* Buffer the current measured value unit */
-    _sick_operating_status.sick_measuring_units = payload_buffer[122];
-    
-    /* Buffer the laser switch flag */
-    _sick_operating_status.sick_laser_mode = payload_buffer[123];
-
-    
-    /*
-     * Extract the current Sick PLS software config
-     */
-    
-    /* Buffer the software version string */
-    memcpy(_sick_software_status.sick_system_software_version,&payload_buffer[1],7);
-
-    /* Buffer the boot prom software version */
-    memcpy(_sick_software_status.sick_prom_software_version,&payload_buffer[124],7);
-
-    /*
-     * Extract the Sick PLS restart config
-     */
-
-    // /* Buffer the restart mode of the device */
-    // _sick_restart_status.sick_restart_mode = payload_buffer[111];
-    
-    // /* Buffer the restart time of the device */
-    // memcpy(&_sick_restart_status.sick_restart_time,&payload_buffer[112],2);
-    // _sick_restart_status.sick_restart_time =
-    //   sick_pls_to_host_byte_order(_sick_restart_status.sick_restart_time);
-    
-    /*
-     * Extract the Sick PLS pollution status
-     */
-
-	//     /* Buffer the pollution values */
-	//     for (unsigned int i = 0, k = 19; i < 8; i++, k+=2) {
-	//       memcpy(&_sick_pollution_status.sick_pollution_vals[i],&payload_buffer[k],2);
-	//       _sick_pollution_status.sick_pollution_vals[i] =
-	// sick_pls_to_host_byte_order(_sick_pollution_status.sick_pollution_vals[i]);
-	//     }
-	// 
-	//     /* Buffer the reference pollution values */
-	//     for (unsigned int i = 0, k = 35; i < 4; i++, k+=2) {
-	//       memcpy(&_sick_pollution_status.sick_reference_pollution_vals[i],&payload_buffer[k],2);
-	//       _sick_pollution_status.sick_reference_pollution_vals[i] =
-	// sick_pls_to_host_byte_order(_sick_pollution_status.sick_reference_pollution_vals[i]);
-	//     }
-	//     
-	//     /* Buffer the calibrating pollution values */
-	//     for (unsigned int i = 0, k = 43; i < 8; i++, k+=2) {
-	//       memcpy(&_sick_pollution_status.sick_pollution_calibration_vals[i],&payload_buffer[k],2);
-	//       _sick_pollution_status.sick_pollution_calibration_vals[i] =
-	// sick_pls_to_host_byte_order(_sick_pollution_status.sick_pollution_calibration_vals[i]);
-	//     }
-	// 
-	//     /* Buffer the calibrating reference pollution values */
-	//     for (unsigned int i = 0, k = 59; i < 4; i++, k+=2) {
-	//       memcpy(&_sick_pollution_status.sick_reference_pollution_calibration_vals[i],&payload_buffer[k],2);
-	//       _sick_pollution_status.sick_reference_pollution_calibration_vals[i] =
-	// sick_pls_to_host_byte_order(_sick_pollution_status.sick_reference_pollution_calibration_vals[i]);
-	//     }
-
-    /*
-     * Extract the Sick PLS signal config 
-     */
-    
-    // /* Buffer the reference scale 1 value (Dark signal 100%) */
-    //  memcpy(&_sick_signal_status.sick_reference_scale_1_dark_100,&payload_buffer[71],2);
-    //  _sick_signal_status.sick_reference_scale_1_dark_100 =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_reference_scale_1_dark_100);
-    // 
-    //  /* Buffer the reference scale 2 value (Dark signal 100%) */
-    //  memcpy(&_sick_signal_status.sick_reference_scale_2_dark_100,&payload_buffer[75],2);
-    //  _sick_signal_status.sick_reference_scale_2_dark_100 =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_reference_scale_2_dark_100);
-    // 
-    //  /* Buffer the reference scale 1 value (Dark signal 66%) */
-    //  memcpy(&_sick_signal_status.sick_reference_scale_1_dark_66,&payload_buffer[77],2);
-    //  _sick_signal_status.sick_reference_scale_1_dark_66 =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_reference_scale_1_dark_66);
-    // 
-    //  /* Buffer the reference scale 2 value (Dark signal 100%) */
-    //  memcpy(&_sick_signal_status.sick_reference_scale_2_dark_66,&payload_buffer[81],2);
-    //  _sick_signal_status.sick_reference_scale_2_dark_66 =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_reference_scale_2_dark_66);
-    // 
-    //  /* Buffer the signal amplitude */
-    //  memcpy(&_sick_signal_status.sick_signal_amplitude,&payload_buffer[83],2);
-    //  _sick_signal_status.sick_signal_amplitude =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_signal_amplitude);
-    // 
-    //  /* Buffer the angle used for power measurement */
-    //  memcpy(&_sick_signal_status.sick_current_angle,&payload_buffer[85],2);
-    //  _sick_signal_status.sick_current_angle =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_current_angle);
- 
-    // /* Buffer the peak threshold value */
-    // memcpy(&_sick_signal_status.sick_peak_threshold,&payload_buffer[87],2);
-    // _sick_signal_status.sick_peak_threshold =
-    //   sick_pls_to_host_byte_order(_sick_signal_status.sick_peak_threshold);
-    
-    // /* Buffer the angle used for reference target power measurement */
-    //  memcpy(&_sick_signal_status.sick_angle_of_measurement,&payload_buffer[89],2);
-    //  _sick_signal_status.sick_angle_of_measurement =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_angle_of_measurement);
-    // 
-    //  /* Buffer the signal amplitude calibration value */
-    //  memcpy(&_sick_signal_status.sick_signal_amplitude_calibration_val,&payload_buffer[91],2);
-    //  _sick_signal_status.sick_signal_amplitude_calibration_val =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_signal_amplitude_calibration_val);
-    // 
-    //  /* Buffer the target value of stop threshold */
-    //  memcpy(&_sick_signal_status.sick_stop_threshold_target_value,&payload_buffer[93],2);
-    //  _sick_signal_status.sick_stop_threshold_target_value =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_stop_threshold_target_value);
-    //  
-    //  /* Buffer the target value of peak threshold */
-    //  memcpy(&_sick_signal_status.sick_peak_threshold_target_value,&payload_buffer[95],2);
-    //  _sick_signal_status.sick_peak_threshold_target_value =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_peak_threshold_target_value);
-    //  
-    //  /* Buffer the actual value of stop threshold */
-    //  memcpy(&_sick_signal_status.sick_stop_threshold_actual_value,&payload_buffer[97],2);
-    //  _sick_signal_status.sick_stop_threshold_actual_value =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_stop_threshold_actual_value);
-    // 
-    //  /* Buffer the actual value of peak threshold */
-    //  memcpy(&_sick_signal_status.sick_peak_threshold_actual_value,&payload_buffer[99],2);
-    //  _sick_signal_status.sick_peak_threshold_actual_value =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_peak_threshold_actual_value);
-    // 
-    //  /* Buffer reference target "single measured values" */
-    //  memcpy(&_sick_signal_status.sick_reference_target_single_measured_vals,&payload_buffer[103],2);
-    //  _sick_signal_status.sick_reference_target_single_measured_vals =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_reference_target_single_measured_vals);
-    //   
-    //  /* Buffer reference target "mean measured values" */
-    //  memcpy(&_sick_signal_status.sick_reference_target_mean_measured_vals,&payload_buffer[105],2);
-    //  _sick_signal_status.sick_reference_target_mean_measured_vals =
-    //    sick_pls_to_host_byte_order(_sick_signal_status.sick_reference_target_mean_measured_vals);
-
-
-    /*
-     * Extract the Sick PLS field config
-     */
-
-    // /* Buffer the offset for multiple evaluations of field set 2 */
-    // _sick_field_status.sick_multiple_evaluation_offset_field_2 = payload_buffer[114];
-    // 
-    // /* Buffer the evaluation number */
-    // _sick_field_status.sick_field_evaluation_number = payload_buffer[118];
-    // 
-    // /* Buffer the active field set number */
-    // _sick_field_status.sick_field_set_number = payload_buffer[121];
-
-
-    /*
-     * Extract the Sick PLS baud config
-     */
-    
-    /* Buffer the permanent baud rate flag */
-    _sick_baud_status.sick_permanent_baud_rate = payload_buffer[119];
-    
-    /* Buffer the baud rate of the device */
-    memcpy(&_sick_baud_status.sick_baud_rate,&payload_buffer[116],2);
-    _sick_baud_status.sick_baud_rate =
-      sick_pls_to_host_byte_order(_sick_baud_status.sick_baud_rate);
-
-    /* Buffer calibration value 1 for counter 0 */
-    //memcpy(&_sick_status_data.sick_calibration_counter_0_value_1,&payload_buffer[131],4);
-    //_sick_status_data.sick_calibration_counter_0_value_1 =
-    //  sick_pls_to_host_byte_order(_sick_status_data.sick_calibration_counter_0_value_1);
-
-    /* Buffer calibration value 2 for counter 0 */
-    //memcpy(&_sick_status_data.sick_calibration_counter_0_value_2,&payload_buffer[135],4);
-    //_sick_status_data.sick_calibration_counter_0_value_2 =
-    //  sick_pls_to_host_byte_order(_sick_status_data.sick_calibration_counter_0_value_2);
-
-    /* Buffer calibration value 1 for counter 1 */
-    //memcpy(&_sick_status_data.sick_calibration_counter_1_value_1,&payload_buffer[139],4);
-    //_sick_status_data.sick_calibration_counter_1_value_1 =
-    //  sick_pls_to_host_byte_order(_sick_status_data.sick_calibration_counter_1_value_1);
-
-    /* Buffer calibration value 2 for counter 1 */
-    //memcpy(&_sick_status_data.sick_calibration_counter_1_value_2,&payload_buffer[143],4);
-    //_sick_status_data.sick_calibration_counter_1_value_2 =
-    //  sick_pls_to_host_byte_order(_sick_status_data.sick_calibration_counter_1_value_2);
-
-    /* Buffer M0 value counter 0 */
-    //memcpy(&_sick_status_data.sick_counter_0_M0,&payload_buffer[147],2);
-    //_sick_status_data.sick_counter_0_M0 = sick_pls_to_host_byte_order(_sick_status_data.sick_counter_0_M0);
-
-    /* Buffer M0 value counter 1 */
-    //memcpy(&_sick_status_data.sick_counter_1_M0,&payload_buffer[149],2);
-    //_sick_status_data.sick_counter_1_M0 = sick_pls_to_host_byte_order(_sick_status_data.sick_counter_1_M0);
-
-    /* Buffer calibration interval */
-    //memcpy(&_sick_status_data.sick_calibration_interval,&payload_buffer[151],2);
-    //_sick_status_data.sick_calibration_interval = sick_pls_to_host_byte_order(_sick_status_data.sick_calibration_interval);
-  
-  }
 
   /**
    * \brief Sets the device to installation mode
@@ -2274,10 +1704,15 @@ namespace SickToolbox {
       throw SickConfigException("SickPLS::_switchSickOperatingMode: Unrecognized operating mode!");
     }
 
-    try {
+    message.Print();
 
+    try {
+      
       /* Attempt to send the message and get the reply */
-      _sendMessageAndGetReply(message,response,DEFAULT_SICK_PLS_SICK_SWITCH_MODE_TIMEOUT,DEFAULT_SICK_PLS_NUM_TRIES);
+      _sendMessageAndGetReply(message,
+			      response,
+			      DEFAULT_SICK_PLS_SICK_SWITCH_MODE_TIMEOUT,
+			      DEFAULT_SICK_PLS_NUM_TRIES);
       
     }
 
@@ -2345,277 +1780,175 @@ namespace SickToolbox {
   }
 
   
-  /**
-   * \brief Parses a byte sequence into a Sick config structure
-   * \param *src_buffer The byte sequence to be parsed
-   * \param &sick_device_config The device configuration
-   */
-  void SickPLS::_parseSickConfigProfile( const uint8_t * const src_buffer, sick_pls_device_config_t &sick_device_config ) const {
 
-	//TODO: early errors will come from here.
-
-    // /* Buffer Block A */
-    // memcpy(&sick_device_config.sick_blanking,&src_buffer[0],2);
-    // sick_device_config.sick_blanking = sick_pls_to_host_byte_order(sick_device_config.sick_blanking);
-    // 
-    // /* Buffer Block B */
-    // sick_device_config.sick_peak_threshold = src_buffer[3]; // NOTE: This value represent sensitivity for PLS 211/221/291
-    // sick_device_config.sick_stop_threshold = src_buffer[2]; // NOTE: This value will be 0 for PLS 211/221/291
-    // 
-    // /* Buffer Block C */
-    // sick_device_config.sick_availability_level = src_buffer[4];
-    // 
-    // /* Buffer Block D */
-    // sick_device_config.sick_measuring_mode = src_buffer[5];
-    // 
-    // /* Buffer Block E */
-    // sick_device_config.sick_measuring_units = src_buffer[6];
-    // 
-    // /* Buffer Block F */
-    // sick_device_config.sick_temporary_field = src_buffer[7];
-    // 
-    // /* Buffer Block G */
-    // sick_device_config.sick_subtractive_fields = src_buffer[8];
-    // 
-    // /* Buffer Block H */
-    // sick_device_config.sick_multiple_evaluation = src_buffer[9];
-    // 
-    // /* Buffer Block I */
-    // sick_device_config.sick_restart = src_buffer[10];
-    // 
-    // /* Buffer Block J */
-    // sick_device_config.sick_restart_time = src_buffer[11];
-    // 
-    // /* Buffer Block K */
-    // sick_device_config.sick_multiple_evaluation_suppressed_objects = src_buffer[12];
-    // 
-    // /* Buffer Block L */
-    // sick_device_config.sick_contour_a_reference = src_buffer[13];
-    // 
-    // /* Buffer Block M */
-    // sick_device_config.sick_contour_a_positive_tolerance_band = src_buffer[14];
-    // 
-    // /* Buffer Block N */
-    // sick_device_config.sick_contour_a_negative_tolerance_band = src_buffer[15];
-    // 
-    // /* Buffer Block O */
-    // sick_device_config.sick_contour_a_start_angle = src_buffer[16];
-    // 
-    // /* Buffer Block P */
-    // sick_device_config.sick_contour_a_stop_angle = src_buffer[17];
-    // 
-    // /* Buffer Block Q */
-    // sick_device_config.sick_contour_b_reference = src_buffer[18];
-    // 
-    // /* Buffer Block R */
-    // sick_device_config.sick_contour_b_positive_tolerance_band = src_buffer[19];
-    // 
-    // /* Buffer Block S */
-    // sick_device_config.sick_contour_b_negative_tolerance_band = src_buffer[20];
-    // 
-    // /* Buffer Block T */
-    // sick_device_config.sick_contour_b_start_angle = src_buffer[21];
-    // 
-    // /* Buffer Block U */
-    // sick_device_config.sick_contour_b_stop_angle = src_buffer[22];
-    // 
-    // /* Buffer Block V */
-    // sick_device_config.sick_contour_c_reference = src_buffer[23];
-    // 
-    // /* Buffer Block W */
-    // sick_device_config.sick_contour_c_positive_tolerance_band = src_buffer[24];
-    // 
-    // /* Buffer Block X */
-    // sick_device_config.sick_contour_c_negative_tolerance_band = src_buffer[25];
-    // 
-    // /* Buffer Block Y */
-    // sick_device_config.sick_contour_c_start_angle = src_buffer[26];
-    // 
-    // /* Buffer Block Z */
-    // sick_device_config.sick_contour_c_stop_angle = src_buffer[27];
-    // 
-    // /* Buffer Block A1 */
-    // sick_device_config.sick_pixel_oriented_evaluation = src_buffer[28];
-    // 
-    // /* Buffer Block A2 */
-    // sick_device_config.sick_single_measured_value_evaluation_mode = src_buffer[29];
-    // 
-    // /* Buffer Block A3 */
-    // memcpy(&sick_device_config.sick_fields_b_c_restart_times,&src_buffer[30],2);
-    // sick_device_config.sick_fields_b_c_restart_times =
-    //   sick_pls_to_host_byte_order(sick_device_config.sick_fields_b_c_restart_times);
-    // 
-    // /* Buffer Block A4 */
-    // memcpy(&sick_device_config.sick_dazzling_multiple_evaluation,&src_buffer[32],2);
-    // sick_device_config.sick_dazzling_multiple_evaluation =
-    //   sick_pls_to_host_byte_order(sick_device_config.sick_dazzling_multiple_evaluation);
+	  /**
+	   * \brief Extracts the measured values (w/ flags) that were returned by the device.
+	   * \param *byte_sequence The byte sequence holding the current measured values
+	   * \param num_measurements The number of measurements given in the byte sequence
+	   * \param *measured_values A buffer to hold the extracted measured values
+	   * \param *field_a_values Stores the Field A values associated with the given measurements (Default: NULL => Not wanted)
+	   * \param *field_b_values Stores the Field B values associated with the given measurements (Default: NULL => Not wanted)
+	   * \param *field_c_values Stores the Field C values associated with the given measurements (Default: NULL => Not wanted)
+	   */
+  void SickPLS::_extractSickMeasurementValues( const uint8_t * const byte_sequence, 
+					       const uint16_t num_measurements, 
+					       uint16_t * const measured_values,
+					       uint8_t * const field_a_values, 
+					       uint8_t * const field_b_values, 
+					       uint8_t * const field_c_values ) const {
+	
+    // /* Parse the byte sequence and fill the return buffer with range measurements... */   
+    // switch(_sick_device_config.sick_measuring_mode) {
+    // case SICK_MS_MODE_8_OR_80_FA_FB_DAZZLE:
+    //   {
+	
+    // 	/* Extract the range and Field values */
+    // 	for(unsigned int i = 0; i < num_measurements; i++) {
+    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x1F);
+	  
+    // 	  if(field_a_values) {  
+    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0x20;
+    // 	  }
+	  
+    // 	  if(field_b_values) {
+    // 	    field_b_values[i] = byte_sequence[i*2+1] & 0x40;
+    // 	  }
+	  
+    // 	  if(field_c_values) {
+    // 	    field_c_values[i] = byte_sequence[i*2+1] & 0x80;
+    // 	  }
+	  
+    // 	}
+	
+    // 	break;
+    //   }
+    // case SICK_MS_MODE_8_OR_80_REFLECTOR:
+    //   {
+	
+    // 	/* Extract the range and Field A */
+    // 	for(unsigned int i = 0; i < num_measurements; i++) {
+    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x1F);
+	  
+    // 	  if(field_a_values) {
+    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0xE0;
+    // 	  }
+	  
+    // 	}
+	
+    // 	break;
+    //   }     
+    // case SICK_MS_MODE_8_OR_80_FA_FB_FC:
+    //   {
+	
+    // 	/* Extract the range and Fields A,B and C */	
+    // 	for(unsigned int i = 0; i < num_measurements; i++) {
+    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x1F);
+	  
+    // 	  if(field_a_values) {
+    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0x20;
+    // 	  }
+	  
+    // 	  if(field_b_values) {
+    // 	    field_b_values[i] = byte_sequence[i*2+1] & 0x40;
+    // 	  }
+	  
+    // 	  if(field_c_values) {
+    // 	    field_c_values[i] = byte_sequence[i*2+1] & 0x80;
+    // 	  }
+	  
+    // 	}
+	
+    // 	break;
+    //   }
+    // case SICK_MS_MODE_16_REFLECTOR:
+    //   {
+	
+    // 	/* Extract the range and reflector values */
+    // 	for(unsigned int i = 0; i < num_measurements; i++) {
+    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x3F);
+	  
+    // 	  if (field_a_values) {
+    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0xC0;
+    // 	  }
+	  
+    // 	}
+	
+    // 	break;
+    //   }
+    // case SICK_MS_MODE_16_FA_FB:
+    //   {
+	
+    // 	/* Extract the range and Fields A and B values */
+    // 	for(unsigned int i = 0; i < num_measurements; i++) {
+    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x3F);
+	  
+    // 	  if(field_a_values) {
+    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0x40;
+    // 	  }
+	  
+    // 	  if(field_b_values) {
+    // 	    field_b_values[i] = byte_sequence[i*2+1] & 0x80;
+    // 	  }
+	  
+    // 	}
+	
+    // 	break;
+    //   }
+    // case SICK_MS_MODE_32_REFLECTOR:
+    //   {
+	
+    // 	/* Extract the range and reflector values */
+    // 	for(unsigned int i = 0; i < num_measurements; i++) {
+    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x7F);
+	  
+    // 	  if(field_a_values) {
+    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0x80;
+    // 	  }
+	  
+    // 	}
+	
+    // 	break;
+    //   }
+    // case SICK_MS_MODE_32_FA:
+    //   {
+	
+    // 	/* Extract the range and Field A values */
+    // 	for(unsigned int i = 0; i < num_measurements; i++) {
+    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x7F);
+	  
+    // 	  if(field_a_values) {
+    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0x80;
+    // 	  }
+	  
+    // 	}
+	
+    // 	break;
+    //   }
+    // case SICK_MS_MODE_32_IMMEDIATE:
+    //   {
+	
+    // 	/* Extract the range measurements (no flags for this mode */
+    // 	for(unsigned int i = 0; i < num_measurements; i++) {
+    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1]);
+    // 	}
+	
+    // 	break;
+    //   }
+    // case SICK_MS_MODE_REFLECTIVITY:
+    //   {
+	
+    // 	/* Extract the reflectivity values */
+    // 	for(unsigned int i = 0; i < num_measurements; i++) {
+    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1]);
+    // 	}
+	
+    // 	break;
+    //   }      
+    // default:      
+    //   break;
+    // }
     
   }
-
-	//   /**
-	//    * \brief Extracts the measured values (w/ flags) that were returned by the device.
-	//    * \param *byte_sequence The byte sequence holding the current measured values
-	//    * \param num_measurements The number of measurements given in the byte sequence
-	//    * \param *measured_values A buffer to hold the extracted measured values
-	//    * \param *field_a_values Stores the Field A values associated with the given measurements (Default: NULL => Not wanted)
-	//    * \param *field_b_values Stores the Field B values associated with the given measurements (Default: NULL => Not wanted)
-	//    * \param *field_c_values Stores the Field C values associated with the given measurements (Default: NULL => Not wanted)
-	//    */
-	//   void SickPLS::_extractSickMeasurementValues( const uint8_t * const byte_sequence, const uint16_t num_measurements, uint16_t * const measured_values,
-	// 				       uint8_t * const field_a_values, uint8_t * const field_b_values, uint8_t * const field_c_values ) const {
-	// 
-	//     /* Parse the byte sequence and fill the return buffer with range measurements... */   
-	//     switch(_sick_device_config.sick_measuring_mode) {
-	//     case SICK_MS_MODE_8_OR_80_FA_FB_DAZZLE:
-	//       {
-	// 
-	// /* Extract the range and Field values */
-	// for(unsigned int i = 0; i < num_measurements; i++) {
-	//   measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x1F);
-	// 
-	//   if(field_a_values) {  
-	//     field_a_values[i] = byte_sequence[i*2+1] & 0x20;
-	//   }
-	//   
-	//   if(field_b_values) {
-	//     field_b_values[i] = byte_sequence[i*2+1] & 0x40;
-	//   }
-	//   
-	//   if(field_c_values) {
-	//     field_c_values[i] = byte_sequence[i*2+1] & 0x80;
-	//   }
-	//   
-	// }
-	// 
-	// break;
-	//       }
-	//     case SICK_MS_MODE_8_OR_80_REFLECTOR:
-	//       {
-	// 
-	// /* Extract the range and Field A */
-	// for(unsigned int i = 0; i < num_measurements; i++) {
-	//   measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x1F);
-	//   
-	//   if(field_a_values) {
-	//     field_a_values[i] = byte_sequence[i*2+1] & 0xE0;
-	//   }
-	//   
-	// }
-	// 
-	// break;
-	//       }     
-	//     case SICK_MS_MODE_8_OR_80_FA_FB_FC:
-	//       {
-	// 
-	// /* Extract the range and Fields A,B and C */	
-	// for(unsigned int i = 0; i < num_measurements; i++) {
-	//   measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x1F);
-	//   
-	//   if(field_a_values) {
-	//     field_a_values[i] = byte_sequence[i*2+1] & 0x20;
-	//   }
-	//   
-	//   if(field_b_values) {
-	//     field_b_values[i] = byte_sequence[i*2+1] & 0x40;
-	//   }
-	//   
-	//   if(field_c_values) {
-	//     field_c_values[i] = byte_sequence[i*2+1] & 0x80;
-	//   }
-	//   
-	// }
-	// 
-	// break;
-	//       }
-	//     case SICK_MS_MODE_16_REFLECTOR:
-	//       {
-	// 
-	// /* Extract the range and reflector values */
-	// for(unsigned int i = 0; i < num_measurements; i++) {
-	//   measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x3F);
-	// 
-	//   if (field_a_values) {
-	//     field_a_values[i] = byte_sequence[i*2+1] & 0xC0;
-	//   }
-	//   
-	// }
-	// 
-	// break;
-	//       }
-	//     case SICK_MS_MODE_16_FA_FB:
-	//       {
-	// 
-	// /* Extract the range and Fields A and B values */
-	// for(unsigned int i = 0; i < num_measurements; i++) {
-	//   measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x3F);
-	// 
-	//   if(field_a_values) {
-	//     field_a_values[i] = byte_sequence[i*2+1] & 0x40;
-	//   }
-	// 
-	//   if(field_b_values) {
-	//     field_b_values[i] = byte_sequence[i*2+1] & 0x80;
-	//   }
-	// 
-	// }
-	// 
-	// break;
-	//       }
-	//     case SICK_MS_MODE_32_REFLECTOR:
-	//       {
-	// 
-	// /* Extract the range and reflector values */
-	// for(unsigned int i = 0; i < num_measurements; i++) {
-	//   measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x7F);
-	// 
-	//   if(field_a_values) {
-	//     field_a_values[i] = byte_sequence[i*2+1] & 0x80;
-	//   }
-	//   
-	// }
-	// 
-	// break;
-	//       }
-	//     case SICK_MS_MODE_32_FA:
-	//       {
-	// 
-	// /* Extract the range and Field A values */
-	// for(unsigned int i = 0; i < num_measurements; i++) {
-	//   measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x7F);
-	// 
-	//   if(field_a_values) {
-	//     field_a_values[i] = byte_sequence[i*2+1] & 0x80;
-	//   }
-	//   
-	// }
-	// 
-	// break;
-	//       }
-	//     case SICK_MS_MODE_32_IMMEDIATE:
-	//       {
-	// 
-	// /* Extract the range measurements (no flags for this mode */
-	// for(unsigned int i = 0; i < num_measurements; i++) {
-	//   measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1]);
-	// }
-	// 
-	// break;
-	//       }
-	//     case SICK_MS_MODE_REFLECTIVITY:
-	//       {
-	// 
-	// /* Extract the reflectivity values */
-	// for(unsigned int i = 0; i < num_measurements; i++) {
-	//   measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1]);
-	// }
-	// 
-	// break;
-	//       }      
-	//     default:      
-	//       break;
-	//     }
-	//     
-	//   }
   
   /**
    * \brief Indicates whether the given measuring units are valid/defined
@@ -2633,13 +1966,7 @@ namespace SickToolbox {
   }
 
 
-  /**
-   * \brief Indicates whether the Sick type is unknown
-   * \return True if the device is unknown, False otherwise
-   */ 
-  bool SickPLS::_isSickUnknown( ) const {
-    return _sick_type == SICK_PLS_TYPE_UNKNOWN;
-  }
+
     
   /**
    * \brief Indicates whether the given scan angle is defined

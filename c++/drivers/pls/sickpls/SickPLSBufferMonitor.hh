@@ -18,7 +18,8 @@
 #ifndef SICK_PLS_BUFFER_MONITOR_HH
 #define SICK_PLS_BUFFER_MONITOR_HH
 
-#define DEFAULT_SICK_PLS_SICK_BYTE_TIMEOUT      (35000)  ///< Max allowable time between consecutive bytes
+//#define DEFAULT_SICK_PLS_SICK_BYTE_TIMEOUT      (35000)  ///< Max allowable time between consecutive bytes
+#define DEFAULT_SICK_PLS_SICK_BYTE_TIMEOUT      (350000)  ///< Max allowable time between consecutive bytes
 
 /* Definition dependencies */
 #include "SickPLSMessage.hh"

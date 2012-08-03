@@ -31,11 +31,11 @@
 #define DEFAULT_SICK_PLS_HOST_ADDRESS                                     (0x80)  ///< Client/host default serial address
 #define DEFAULT_SICK_PLS_SICK_ADDRESS                                     (0x00)  ///< Sick PLS default serial address
 #define DEFAULT_SICK_PLS_SICK_PASSWORD                                "SICK_PLS"  ///< Password for entering installation mode
-#define DEFAULT_SICK_PLS_SICK_MESSAGE_TIMEOUT                (unsigned int)(1e6)  ///< The max time to wait for a message reply (usecs)
-#define DEFAULT_SICK_PLS_SICK_SWITCH_MODE_TIMEOUT            (unsigned int)(3e6)  ///< Can take the Sick LD up to 3 seconds to reply (usecs)
-#define DEFAULT_SICK_PLS_SICK_MEAN_VALUES_MESSAGE_TIMEOUT   (unsigned int)(15e6)  ///< When using mean values, the Sick can sometimes take more than 10s to respond
-#define DEFAULT_SICK_PLS_SICK_CONFIG_MESSAGE_TIMEOUT        (unsigned int)(15e6)  ///< The sick can take some time to respond to config commands (usecs)
+#define DEFAULT_SICK_PLS_SICK_MESSAGE_TIMEOUT                (unsigned int)(20e6)  ///< The max time to wait for a message reply (usecs)
+#define DEFAULT_SICK_PLS_SICK_SWITCH_MODE_TIMEOUT            (unsigned int)(20e6)  ///< Can take the Sick LD up to 3 seconds to reply (usecs)
+#define DEFAULT_SICK_PLS_SICK_CONFIG_MESSAGE_TIMEOUT        (unsigned int)(20e6)  ///< The sick can take some time to respond to config commands (usecs)
 #define DEFAULT_SICK_PLS_BYTE_INTERVAL                                      (55)  ///< Minimum time in microseconds between transmitted bytes
+//#define DEFAULT_SICK_PLS_BYTE_INTERVAL                                      (0)  ///< Minimum time in microseconds between transmitted bytes
 #define DEFAULT_SICK_PLS_NUM_TRIES                                           (3)  ///< The max number of tries before giving up on a request
     
 /* Associate the namespace */
@@ -55,26 +55,6 @@ namespace SickToolbox {
     /** Define the maximum number of measurements */
 	/* TODO: I think this should be 180 * 2 */
     static const uint16_t SICK_MAX_NUM_MEASUREMENTS = 721;                     ///< Maximum number of measurements returned by the Sick PLS
-
-    /*!
-     * \enum sick_pls_type_t 
-     * \brief Defines the Sick PLS types.
-     * This enum lists all of the supported Sick PLS models.
-     */
-    enum sick_pls_type_t {
-
-
-      /* TODO: List taken from website, need to prune. */
-      SICK_PLS_TYPE_101_312,
-      SICK_PLS_TYPE_101_316,
-      SICK_PLS_TYPE_109_317,
-      SICK_PLS_TYPE_10X_317,
-      SICK_PLS_TYPE_201_313,
-
-      /* Any unknown model */
-      SICK_PLS_TYPE_UNKNOWN = 0xFF                                             ///< Unknown sick type      
-
-    };
 
 
     /*!
@@ -176,27 +156,11 @@ namespace SickToolbox {
       uint16_t sick_scan_resolution;                                           ///< Sick angular resolution (1/100 deg)
       uint16_t sick_num_motor_revs;                                            ///< Sick number of motor revs
       uint8_t sick_operating_mode;                                             ///< Sick operating mode
-      uint8_t sick_measuring_mode;                                             ///< Sick measuring mode
       uint8_t sick_laser_mode;                                                 ///< Sick laser is on/off
-      uint8_t sick_device_status;                                              ///< Sick device status {ok,error}
       uint8_t sick_measuring_units;                                            ///< Sick measuring units {cm,mm}
       uint8_t sick_address;                                                    ///< Sick device address
     } sick_pls_operating_status_t;
     
-    /*!
-     * \struct sick_pls_software_status_tag
-     * \brief A structure for aggregating the data that
-     *        collectively defines the system software
-     *        for the Sick PLS unit.
-     */
-    /*!
-     * \typedef sick_pls_software_status_t
-     * \brief Adopt c-style convention
-     */
-    typedef struct sick_pls_software_status_tag {
-      uint8_t sick_system_software_version[8];                                 ///< Sick system software version
-      uint8_t sick_prom_software_version[8];                                   ///< Sick boot prom software version
-    } sick_pls_software_status_t;
        
     
     /*!
@@ -213,22 +177,6 @@ namespace SickToolbox {
       uint8_t sick_permanent_baud_rate;                                        ///< 0 - When power is switched on baud rate is 9600/1 - configured transmission rate is used                                   
     } sick_pls_baud_status_t;
     
-    /*!
-     * \struct sick_pls_device_config_tag
-     * \brief A structure for aggregating the data that
-     *        collectively defines the Sick's config.
-     */
-    /*!
-     * \typedef sick_pls_device_config_t
-     * \brief Adopt c-style convention
-     */
-    typedef struct sick_pls_device_config_tag {
-      uint16_t sick_blanking;                                                  ///< Maximum diameter of objects that are not to be detected (units cm)                
-      uint8_t sick_measuring_units;                                            ///< Measured value and field value units
-      uint8_t sick_temporary_field;                                            ///< Indicates whether the temporary field is being used
-      uint8_t sick_restart;                                                    ///< Indicates the restart level of the device
-      uint8_t sick_restart_time;                                               ///< Inidicates the restart time of the device
-    } sick_pls_device_config_t;
     
     /*!
      * \struct sick_pls_scan_profile_b0_tag
@@ -265,9 +213,6 @@ namespace SickToolbox {
     /** Gets the Sick PLS device path */
     std::string GetSickDevicePath( ) const;
     
-    /** Gets the Sick PLS device type */
-    sick_pls_type_t GetSickType( ) const throw( SickConfigException );
-
     /** Gets the scan angle currently being used by the device */
     double GetSickScanAngle( ) const throw( SickConfigException );
 
@@ -293,28 +238,14 @@ namespace SickToolbox {
     /** Get Sick status as a string */
     std::string GetSickStatusAsString( ) const;
     
-    /** Get Sick software info as a string */
-    std::string GetSickSoftwareVersionAsString( ) const;
     
-    /** Get Sick config as a string */
-    std::string GetSickConfigAsString( ) const;
-    
-    /** Print the Sick PLS status */
-    void PrintSickStatus( ) const;
 
-    /** Print the Sick PLS software versions */
-    void PrintSickSoftwareVersion( ) const;
-
-    /** Print the Sick PLS configuration */
-    void PrintSickConfig( ) const;
 
     /*
      * NOTE: The following methods are given to make working with our
      *       predefined types a bit more manageable.
      */
 
-    /** Converts the PLS's type to a corresponding string */
-    static std::string SickTypeToString( const sick_pls_type_t sick_type );
 
     /** A utility function for converting integers to pls_sick_scan_angle_t */
     static sick_pls_scan_angle_t IntToSickScanAngle( const int scan_angle_int );
@@ -354,20 +285,14 @@ namespace SickToolbox {
     /** The desired baud rate for communicating w/ the Sick */
     sick_pls_baud_t _desired_session_baud;
     
-    /** A string representing the type of device */
-    sick_pls_type_t _sick_type;
 
     /** The operating parameters of the device */
-    sick_pls_operating_status_t _sick_operating_status;
+  sick_pls_operating_status_t _sick_operating_status;
 
-    /** The current software version being run on the device */
-    sick_pls_software_status_t _sick_software_status;
 
     /** The baud configuration of the device */
     sick_pls_baud_status_t _sick_baud_status;
 
-    /** The device configuration for the Sick */
-    sick_pls_device_config_t _sick_device_config;
     
     /** Stores information about the original terminal settings */
     struct termios _old_term;
@@ -403,15 +328,6 @@ namespace SickToolbox {
     /** Changes the terminal's baud rate. */
     void _setTerminalBaud( const sick_pls_baud_t sick_baud ) throw( SickIOException, SickThreadException );
 
-    /** Gets the type of Sick PLS */
-    void _getSickType( ) throw( SickTimeoutException, SickIOException, SickThreadException );
-
-    /** Gets the current Sick configuration settings */
-    void _getSickConfig( ) throw( SickTimeoutException, SickIOException, SickThreadException );
-    
-    /** Gets the status of the PLS */
-    void _getSickStatus( ) throw( SickTimeoutException, SickIOException, SickThreadException );
-
     /** Gets the error status of the Sick PLS */
     void _getSickErrors( unsigned int * const num_sick_errors = NULL,
 			 uint8_t * const error_type_buffer = NULL,
@@ -440,8 +356,6 @@ namespace SickToolbox {
     /** Parses the scan profile returned w/ message B0 */
     void _parseSickScanProfileB0( const uint8_t * const src_buffer, sick_pls_scan_profile_b0_t &sick_scan_profile ) const;
 
-    /** A function for parsing a byte sequence into a device config structure */
-    void _parseSickConfigProfile( const uint8_t * const src_buffer, sick_pls_device_config_t &sick_device_config ) const;
 
     /** Acquires the bit mask to extract the field bit values returned with each range measurement */
     void _extractSickMeasurementValues( const uint8_t * const byte_sequence, const uint16_t num_measurements, uint16_t * const measured_values,
@@ -456,20 +370,10 @@ namespace SickToolbox {
     /** Indicates whether the given scan resolution is defined */
     bool _validSickScanResolution( const sick_pls_scan_resolution_t sick_scan_resolution ) const;
 
-    /** Indicates whether the Sick PLS type is unknown */
-    bool _isSickUnknown( ) const;
-    
     /** Given a baud rate as an integer, gets a PLS baud rate command. */
     sick_pls_baud_t _baudToSickBaud( const int baud_rate ) const;
 
   };
-
-  /*!
-   * \typedef sick_pls_type_t
-   * \brief Makes working w/ SickPLS::sick_pls_type_t a bit easier
-   */
-  typedef SickPLS::sick_pls_type_t sick_pls_type_t;
-
 
   /*!
    * \typedef sick_pls_scan_angle_t
@@ -489,11 +393,6 @@ namespace SickToolbox {
    */
   typedef SickPLS::sick_pls_measuring_units_t sick_pls_measuring_units_t;
   
-  /*!
-   * \typedef sick_pls_status_t
-   * \brief Makes working w/ SickPLS::sick_pls_status_t a bit easier
-   */
-  typedef SickPLS::sick_pls_status_t sick_pls_status_t;
 
   /*!
    * \typedef sick_pls_operating_mode_t

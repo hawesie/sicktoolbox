@@ -64,6 +64,7 @@ namespace SickToolbox {
  	/* Attempt to read in another byte */
  	_readBytes(&search_buffer[1],1,DEFAULT_SICK_PLS_SICK_BYTE_TIMEOUT);
 
+
 	/* Header should be no more than max message length + header length bytes away */
 	if (bytes_searched > SickPLSMessage::MESSAGE_MAX_LENGTH + SickPLSMessage::MESSAGE_HEADER_LENGTH) {
 	  throw SickTimeoutException("SickPLSBufferMonitor::GetNextMessageFromDataStream: header timeout!");
@@ -72,10 +73,18 @@ namespace SickToolbox {
 	/* Increment the number of bytes searched */
 	bytes_searched++;
 	
+	// std::cout.setf(std::ios::hex,std::ios::basefield);
+	// std::cout << "search_buffer[1]: " << search_buffer[1]<<std::endl;
+	// std::cout.setf(std::ios::dec,std::ios::basefield);
+	// std::cout << " bytes searched: " << bytes_searched<< std::endl;  
+	
+
       }
       
       /* Read until we receive the payload length or we timeout */
       _readBytes(payload_length_buffer,2,DEFAULT_SICK_PLS_SICK_BYTE_TIMEOUT);
+
+
 
       /* Extract the payload length */
       memcpy(&payload_length,payload_length_buffer,2);
@@ -90,7 +99,7 @@ namespace SickToolbox {
 	/* Read until we receive the checksum or we timeout */
 	_readBytes(checksum_buffer,2,DEFAULT_SICK_PLS_SICK_BYTE_TIMEOUT);
 	
-	/* Copy into uint16_t so it can be used */
+	/* Copl;y into uint16_t so it can be used */
 	memcpy(&checksum,checksum_buffer,2);
 	checksum = sick_pls_to_host_byte_order(checksum);
 	
@@ -106,7 +115,10 @@ namespace SickToolbox {
       
     }
     
-    catch(SickTimeoutException &sick_timeout_exception) { /* This is ok! */ }
+    catch(SickTimeoutException &sick_timeout_exception) { 
+      /* This is ok! as we're usually waiting for the laser to respond*/ 
+      //std::cout<<"is this really ok?: "<<sick_timeout_exception.what()<<std::endl;  
+    }
     
     /* Handle a bad checksum! */
     catch(SickBadChecksumException &sick_checksum_exception) {

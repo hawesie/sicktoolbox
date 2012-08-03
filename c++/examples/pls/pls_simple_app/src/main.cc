@@ -89,8 +89,7 @@ int main(int argc, char* argv[])
    */
   try {
     sick_pls.Uninitialize();
-  }
-  
+  } 
   catch(...) {
     cerr << "Uninitialize failed!" << endl;
     return -1;

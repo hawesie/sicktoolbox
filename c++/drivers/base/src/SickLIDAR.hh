@@ -360,6 +360,12 @@ namespace SickToolbox {
 	/* Extract the payload subregion */
 	curr_message.GetPayloadSubregion(payload_buffer,0,byte_sequence_length-1);
 	
+	// std::cout.setf(std::ios::hex,std::ios::basefield);
+	// for (i=0; (i < byte_sequence_length); i++) {
+	//   std::cout << "Read from payload: " << (unsigned int) payload_buffer[i] << std::endl;  
+	// }
+	// std::cout.setf(std::ios::dec,std::ios::basefield);
+
 	/* Match the byte sequence */
 	for (i=0; (i < byte_sequence_length) && (payload_buffer[i] == byte_sequence[i]); i++);
 
@@ -370,6 +376,9 @@ namespace SickToolbox {
 	}
 	
       }
+      else {
+	//std::cout<<"no next message"<<std::endl;
+      }
       
       /* Sleep a little bit */
       usleep(1000);     
@@ -377,7 +386,7 @@ namespace SickToolbox {
       /* Check whether the allowed time has expired */
       gettimeofday(&end_time,NULL);        
       if (_computeElapsedTime(beg_time,end_time) > timeout_value) {
-      	throw SickTimeoutException();
+      	throw SickTimeoutException("SickLIDAR::_recvMessage timeout");
       }      
       
     }
