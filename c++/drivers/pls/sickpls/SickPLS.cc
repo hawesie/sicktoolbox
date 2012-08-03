@@ -978,7 +978,7 @@ namespace SickToolbox {
     
     message.BuildMessage(DEFAULT_SICK_PLS_SICK_ADDRESS,payload,2);
     
-    message.Print();
+    // message.Print();
 
     try {
 
