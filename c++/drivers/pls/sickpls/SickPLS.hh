@@ -83,9 +83,8 @@ namespace SickToolbox {
      */
     enum sick_pls_measuring_units_t {
 
-      /* TODO: check what this does */
-	  SICK_MEASURING_UNITS_CM = 0x00,                                          ///< Measured values are in centimeters
-      SICK_MEASURING_UNITS_MM = 0x01,                                          ///< Measured values are in milimeters
+      /* Only in cm */
+      SICK_MEASURING_UNITS_CM = 0x00,                                          ///< Measured values are in centimeters
       SICK_MEASURING_UNITS_UNKNOWN = 0xFF                                      ///< Unknown units
     };
 
@@ -358,12 +357,8 @@ namespace SickToolbox {
 
 
     /** Acquires the bit mask to extract the field bit values returned with each range measurement */
-    void _extractSickMeasurementValues( const uint8_t * const byte_sequence, const uint16_t num_measurements, uint16_t * const measured_values,
-					uint8_t * const field_a_values = NULL, uint8_t * const field_b_values = NULL, uint8_t * const field_c_values = NULL ) const;
+    void _extractSickMeasurementValues( const uint8_t * const byte_sequence, const uint16_t num_measurements, uint16_t * const measured_values) const;
     
-    /** Indicates whether the given unit value is defined */
-    bool _validSickMeasuringUnits( const sick_pls_measuring_units_t sick_units ) const;
-
     /** Indicates whether the given scan angle is defined */
     bool _validSickScanAngle( const sick_pls_scan_angle_t sick_scan_angle ) const;
 

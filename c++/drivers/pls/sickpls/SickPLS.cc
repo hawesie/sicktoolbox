@@ -54,6 +54,11 @@ namespace SickToolbox {
 
     //start in an unknown mode
     _sick_operating_status.sick_operating_mode  = SICK_OP_MODE_UNKNOWN;   
+    
+    //fixed parameters
+    _sick_operating_status.sick_measuring_units = SICK_MEASURING_UNITS_CM;
+    _sick_operating_status.sick_scan_resolution = SICK_SCAN_RESOLUTION_50;
+    _sick_operating_status.sick_scan_angle = SICK_SCAN_ANGLE_180;
   }
 
   /**
@@ -326,9 +331,7 @@ namespace SickToolbox {
       throw SickConfigException("SickPLS::GetSickMeasuringUnits: Sick PLS is not initialized!");
     }
 
-    /* Return the measurement units */
     return (sick_pls_measuring_units_t)_sick_operating_status.sick_measuring_units;
-
   }
   
   /**
@@ -734,8 +737,6 @@ namespace SickToolbox {
     switch(sick_units) {
     case SICK_MEASURING_UNITS_CM:
       return "Centimeters (cm)";
-    case SICK_MEASURING_UNITS_MM:
-      return "Millimeters (mm)";
     default:
       return "Unknown!";
     }
@@ -1791,182 +1792,13 @@ namespace SickToolbox {
 	   */
   void SickPLS::_extractSickMeasurementValues( const uint8_t * const byte_sequence, 
 					       const uint16_t num_measurements, 
-					       uint16_t * const measured_values,
-					       uint8_t * const field_a_values, 
-					       uint8_t * const field_b_values, 
-					       uint8_t * const field_c_values ) const {
-	
-    // /* Parse the byte sequence and fill the return buffer with range measurements... */   
-    // switch(_sick_device_config.sick_measuring_mode) {
-    // case SICK_MS_MODE_8_OR_80_FA_FB_DAZZLE:
-    //   {
-	
-    // 	/* Extract the range and Field values */
-    // 	for(unsigned int i = 0; i < num_measurements; i++) {
-    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x1F);
-	  
-    // 	  if(field_a_values) {  
-    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0x20;
-    // 	  }
-	  
-    // 	  if(field_b_values) {
-    // 	    field_b_values[i] = byte_sequence[i*2+1] & 0x40;
-    // 	  }
-	  
-    // 	  if(field_c_values) {
-    // 	    field_c_values[i] = byte_sequence[i*2+1] & 0x80;
-    // 	  }
-	  
-    // 	}
-	
-    // 	break;
-    //   }
-    // case SICK_MS_MODE_8_OR_80_REFLECTOR:
-    //   {
-	
-    // 	/* Extract the range and Field A */
-    // 	for(unsigned int i = 0; i < num_measurements; i++) {
-    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x1F);
-	  
-    // 	  if(field_a_values) {
-    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0xE0;
-    // 	  }
-	  
-    // 	}
-	
-    // 	break;
-    //   }     
-    // case SICK_MS_MODE_8_OR_80_FA_FB_FC:
-    //   {
-	
-    // 	/* Extract the range and Fields A,B and C */	
-    // 	for(unsigned int i = 0; i < num_measurements; i++) {
-    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x1F);
-	  
-    // 	  if(field_a_values) {
-    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0x20;
-    // 	  }
-	  
-    // 	  if(field_b_values) {
-    // 	    field_b_values[i] = byte_sequence[i*2+1] & 0x40;
-    // 	  }
-	  
-    // 	  if(field_c_values) {
-    // 	    field_c_values[i] = byte_sequence[i*2+1] & 0x80;
-    // 	  }
-	  
-    // 	}
-	
-    // 	break;
-    //   }
-    // case SICK_MS_MODE_16_REFLECTOR:
-    //   {
-	
-    // 	/* Extract the range and reflector values */
-    // 	for(unsigned int i = 0; i < num_measurements; i++) {
-    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x3F);
-	  
-    // 	  if (field_a_values) {
-    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0xC0;
-    // 	  }
-	  
-    // 	}
-	
-    // 	break;
-    //   }
-    // case SICK_MS_MODE_16_FA_FB:
-    //   {
-	
-    // 	/* Extract the range and Fields A and B values */
-    // 	for(unsigned int i = 0; i < num_measurements; i++) {
-    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x3F);
-	  
-    // 	  if(field_a_values) {
-    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0x40;
-    // 	  }
-	  
-    // 	  if(field_b_values) {
-    // 	    field_b_values[i] = byte_sequence[i*2+1] & 0x80;
-    // 	  }
-	  
-    // 	}
-	
-    // 	break;
-    //   }
-    // case SICK_MS_MODE_32_REFLECTOR:
-    //   {
-	
-    // 	/* Extract the range and reflector values */
-    // 	for(unsigned int i = 0; i < num_measurements; i++) {
-    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x7F);
-	  
-    // 	  if(field_a_values) {
-    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0x80;
-    // 	  }
-	  
-    // 	}
-	
-    // 	break;
-    //   }
-    // case SICK_MS_MODE_32_FA:
-    //   {
-	
-    // 	/* Extract the range and Field A values */
-    // 	for(unsigned int i = 0; i < num_measurements; i++) {
-    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x7F);
-	  
-    // 	  if(field_a_values) {
-    // 	    field_a_values[i] = byte_sequence[i*2+1] & 0x80;
-    // 	  }
-	  
-    // 	}
-	
-    // 	break;
-    //   }
-    // case SICK_MS_MODE_32_IMMEDIATE:
-    //   {
-	
-    // 	/* Extract the range measurements (no flags for this mode */
-    // 	for(unsigned int i = 0; i < num_measurements; i++) {
-    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1]);
-    // 	}
-	
-    // 	break;
-    //   }
-    // case SICK_MS_MODE_REFLECTIVITY:
-    //   {
-	
-    // 	/* Extract the reflectivity values */
-    // 	for(unsigned int i = 0; i < num_measurements; i++) {
-    // 	  measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1]);
-    // 	}
-	
-    // 	break;
-    //   }      
-    // default:      
-    //   break;
-    // }
-    
+					       uint16_t * const measured_values) const {
+    /* Extract the range and Field values */
+    for(unsigned int i = 0; i < num_measurements; i++) {
+      measured_values[i] = byte_sequence[i*2] + 256*(byte_sequence[i*2+1] & 0x1F);                 
+    }    
   }
   
-  /**
-   * \brief Indicates whether the given measuring units are valid/defined
-   * \param sick_units The units in question
-   */ 
-  bool SickPLS::_validSickMeasuringUnits( const sick_pls_measuring_units_t sick_units ) const {
-
-    /* Check the given units value */
-    if (sick_units != SICK_MEASURING_UNITS_CM && sick_units != SICK_MEASURING_UNITS_MM) {
-      return false;
-    }
-
-    /* Valid */
-    return true;
-  }
-
-
-
-    
   /**
    * \brief Indicates whether the given scan angle is defined
    * \param sick_scan_angle The scan angle in question
@@ -2000,30 +1832,7 @@ namespace SickToolbox {
   
 
   
-	//   /**
-	//    * \brief Indicates whether the given measuring mode is defined
-	//    * \param sick_measuring_mode The sick measuring mode in question
-	//    */ 
-	//   bool SickPLS::_validSickMeasuringMode( const sick_pls_measuring_mode_t sick_measuring_mode ) const {
-	// 
-	//     /* Check the given measuring mode */
-	//     if (sick_measuring_mode != SICK_MS_MODE_8_OR_80_FA_FB_DAZZLE &&
-	// sick_measuring_mode != SICK_MS_MODE_8_OR_80_REFLECTOR &&
-	// sick_measuring_mode != SICK_MS_MODE_8_OR_80_FA_FB_FC &&
-	// sick_measuring_mode != SICK_MS_MODE_16_REFLECTOR &&
-	// sick_measuring_mode != SICK_MS_MODE_16_FA_FB &&
-	// sick_measuring_mode != SICK_MS_MODE_32_REFLECTOR &&
-	// sick_measuring_mode != SICK_MS_MODE_32_FA &&
-	// sick_measuring_mode != SICK_MS_MODE_32_IMMEDIATE &&
-	// sick_measuring_mode != SICK_MS_MODE_REFLECTIVITY ) {
-	// 
-	//       return false;
-	//     }
-	//     
-	//     /* Valid */
-	//     return true;
-	//   }
-  
+
   /**
    * \brief Converts a termios baud to an equivalent Sick baud
    * \param baud_rate The baud rate to be converted to a Sick PLS baud
